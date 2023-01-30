@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct DataRange: Codable {
+public class DataRange: Codable {
     public var start: Double?
     public var end: Double?
     

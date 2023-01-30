@@ -7,7 +7,12 @@
 
 import Foundation
 
-public struct AdBeacon: Codable {
+public class AdBeacon: Codable {
     public var adBreaks: [AdBreak]
     public var dataRange: DataRange?
+    
+    init(adBreaks: [AdBreak], dataRange: DataRange? = nil) {
+        self.adBreaks = adBreaks
+        self.dataRange = dataRange
+    }
 }
