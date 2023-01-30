@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum EventType: String, Codable {
+public enum EventType: String, Decodable {
     case pause
     case resume
     case mute

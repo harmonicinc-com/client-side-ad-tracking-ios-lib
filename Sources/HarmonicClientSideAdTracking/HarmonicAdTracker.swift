@@ -15,24 +15,22 @@ enum HarmonicAdTrackerError: Error {
     case runtimeError(String)
 }
 
-public class HarmonicAdTracker: ClientSideAdTracker {
+public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
+    @Published
+    public var adPods: [AdBreak] = []
     
-    private var adPods: [AdBreak] = []
-    private var delegate: HarmonicAdTrackerDelegate?
     private var lastPlayheadTime: Double = 0
     private var lastPlayheadUpdateTime: Double = 0
-    
-    // MARK: Public ClientSideAdTracker
-    
-    public init(adPods: [AdBreak], delegate: HarmonicAdTrackerDelegate? = nil) {
+        
+    public init(adPods: [AdBreak] = [], lastPlayheadTime: Double = 0, lastPlayheadUpdateTime: Double = 0) {
         self.adPods = adPods
-        self.delegate = delegate
+        self.lastPlayheadTime = lastPlayheadTime
+        self.lastPlayheadUpdateTime = lastPlayheadUpdateTime
     }
     
-    public func updatePods(_ pods: [AdBreak]) {
-        let updated = HarmonicAdTracker.mergePods(existingPods: &adPods, pods: pods)
-        if updated {
-            delegate?.receiveUpdate()
+    public func updatePods(_ pods: [AdBreak]?) {
+        if let pods = pods {
+            HarmonicAdTracker.mergePods(existingPods: &adPods, pods: pods)
         }
     }
     
@@ -60,11 +58,10 @@ public class HarmonicAdTracker: ClientSideAdTracker {
     
     // MARK: Private
     
-    private func sendBeacon(_ trackingEvent: TrackingEvent) async {        
-        trackingEvent.reportingState = .connecting
-        // TODO: when connecting how to notify player??
-        
-        delegate?.receiveUpdate()
+    private func sendBeacon(_ trackingEvent: TrackingEvent) async {
+        DispatchQueue.main.async {
+            trackingEvent.reportingState = .connecting
+        }
         
         do {
             try await withThrowingTaskGroup(of: (String, HTTPURLResponse).self,
@@ -92,16 +89,20 @@ public class HarmonicAdTracker: ClientSideAdTracker {
                 
             })
             
-            trackingEvent.reportingState = .done
+            DispatchQueue.main.async {
+                trackingEvent.reportingState = .done
+            }
         } catch HarmonicAdTrackerError.runtimeError(let errorMessage) {
             print("Failed to send beacon; the error message is: \(errorMessage)")
-            trackingEvent.reportingState = .failed
+            DispatchQueue.main.async {
+                trackingEvent.reportingState = .failed
+            }
         } catch {
             print("Failed to send beacon; unexpected error: \(error)")
-            trackingEvent.reportingState = .failed
+            DispatchQueue.main.async {
+                trackingEvent.reportingState = .failed
+            }
         }
-
-        delegate?.receiveUpdate()
     }
     
     private func iterateTrackingEvents(time0: Double?, time1: Double?) async {

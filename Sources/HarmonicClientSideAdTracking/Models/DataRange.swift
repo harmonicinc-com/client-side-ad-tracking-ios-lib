@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class DataRange: Codable {
+public class DataRange: Decodable {
     public var start: Double?
     public var end: Double?
     

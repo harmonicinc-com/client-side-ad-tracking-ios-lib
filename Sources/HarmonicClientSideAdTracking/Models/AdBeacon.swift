@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class AdBeacon: Codable {
+public class AdBeacon: Decodable {
     public var adBreaks: [AdBreak]
     public var dataRange: DataRange?
     
