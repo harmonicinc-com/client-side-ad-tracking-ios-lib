@@ -42,6 +42,10 @@ public struct PlayerView: View {
                         player.play()
                     }
                 }
+                .onDisappear {
+                    player.pause()
+                    player.replaceCurrentItem(with: nil)
+                }
         }
     }
 }

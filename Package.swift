@@ -6,7 +6,6 @@ import PackageDescription
 let package = Package(
     name: "HarmonicClientSideAdTracking",
     platforms: [
-        .macOS(.v10_15),
         .iOS(.v15)
     ],
     products: [
