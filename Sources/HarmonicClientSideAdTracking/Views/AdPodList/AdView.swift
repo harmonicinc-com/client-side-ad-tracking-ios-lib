@@ -31,7 +31,17 @@ struct AdView: View {
                 let ad = pod.ads.first(where: { $0.id == ad.id }),
                 let startTime = ad.startTime,
                 let duration = ad.duration {
-                expandAd = adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
+                if ad.expanded == nil {
+                    expandAd = adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
+                }
+            }
+        }
+        .onChange(of: expandAd) { newValue in
+            if let startTime = ad.startTime,
+                let duration = ad.duration,
+                newValue &&
+                adTracker.getPlayheadTime() > startTime + duration + KEEP_PAST_AD_MS {
+                ad.expanded = newValue
             }
         }
     }

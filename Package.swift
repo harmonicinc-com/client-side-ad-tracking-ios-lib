@@ -24,7 +24,8 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
         .target(
             name: "HarmonicClientSideAdTracking",
-            dependencies: []),
+            dependencies: [],
+            resources: [.process("Preview Content/sample-metadata.json")]),
         .testTarget(
             name: "HarmonicClientSideAdTrackingTests",
             dependencies: ["HarmonicClientSideAdTracking"]),

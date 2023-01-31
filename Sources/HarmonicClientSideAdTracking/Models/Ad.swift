@@ -11,6 +11,7 @@ public class Ad: Decodable, Identifiable, ObservableObject {
     public var id: String?
     public var startTime: Double?
     public var duration: Double?
+    public var expanded: Bool?
     
     @Published
     public var trackingEvents: [TrackingEvent]
