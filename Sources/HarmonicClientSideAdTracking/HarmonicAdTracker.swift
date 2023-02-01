@@ -17,7 +17,7 @@ enum HarmonicAdTrackerError: Error {
 
 public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     @Published
-    public var adPods: [AdBreak] = []
+    public private(set) var adPods: [AdBreak] = []
     
     private var lastPlayheadTime: Double = 0
     private var lastPlayheadUpdateTime: Double = 0

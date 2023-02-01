@@ -11,7 +11,7 @@ import AVFoundation
 public class PlayerObserver {
     
     @Published
-    public var playhead: Double?
+    public private(set) var playhead: Double?
     
     private var dateObservation: Any?
     
