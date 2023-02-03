@@ -9,7 +9,6 @@ import Foundation
 
 public protocol ClientSideAdTracker {
     func updatePods(_ pods: [AdBreak]?)
-    func getAdPods() -> [AdBreak]
     func getPlayheadTime() -> Double
     func needSendBeacon(time: Double) async
 }

@@ -8,19 +8,85 @@
 import Combine
 import AVFoundation
 
-public class PlayerObserver {
+public class PlayerObserver: ObservableObject {
     
     @Published
     public private(set) var playhead: Double?
     
-    private var dateObservation: Any?
+    @Published
+    public private(set) var interstitialStartDate: Double?
     
-    public init(player: AVPlayer) {
-        dateObservation = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.1, preferredTimescale: 600), queue: nil, using: { _ in
-            self.playhead = (player.currentItem?.currentDate()?.timeIntervalSince1970 ?? 0) * 1_000
-        })
+    @Published
+    public private(set) var elapsedTimeInInterstitial: Double?
+    
+    private var interstitialPlayer: AVPlayer?
+    
+    private var currentAdItems: [(AVAsset, CMTime)] = []
+    
+    private var primaryPlayheadObservation: Any?
+    
+    private var interstitialPlayheadObservation: Any?
+    
+    public func setPlayer(_ player: AVPlayer) {
+        setPrimaryPlayheadObservation(player)
+        
+        let interstitialMonitor = AVPlayerInterstitialEventMonitor(primaryPlayer: player)
+        
+        interstitialPlayer = interstitialMonitor.interstitialPlayer
+        
+        addObserverForCurrentInterstitialEvent(interstitialMonitor)
+        
+        setInterstitialPlayheadObservation(interstitialMonitor)
     }
     
-    public init() {}
+    private func setPrimaryPlayheadObservation(_ player: AVPlayer) {
+        primaryPlayheadObservation = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.1, preferredTimescale: 600),
+            queue: nil,
+            using: { _ in
+                if let currentTime = player.currentItem?.currentDate()?.timeIntervalSince1970,
+                   self.interstitialPlayer?.timeControlStatus != .playing {
+                    self.playhead = currentTime * 1_000
+                }
+            })
+    }
+    
+    private func addObserverForCurrentInterstitialEvent(_ monitor: AVPlayerInterstitialEventMonitor) {
+        NotificationCenter.default.addObserver(
+            forName: AVPlayerInterstitialEventMonitor.currentEventDidChangeNotification,
+            object: monitor,
+            queue: .main) { notification in
+                let currentEvent = monitor.currentEvent
+                self.currentAdItems = currentEvent?.templateItems.map({ item in
+                    return (item.asset, item.asset.duration)
+                }) ?? []
+            }
+    }
+    
+    private func setInterstitialPlayheadObservation(_ monitor: AVPlayerInterstitialEventMonitor) {
+        interstitialPlayheadObservation = monitor.interstitialPlayer.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.1, preferredTimescale: 600),
+            queue: nil,
+            using: { _ in
+                guard let interstitialStartDate = monitor.currentEvent?.date?.timeIntervalSince1970 else { return }
+                self.interstitialStartDate = interstitialStartDate * 1_000
+                
+                guard let interstitialPlayer = self.interstitialPlayer else { return }
+                
+                guard interstitialPlayer.timeControlStatus == .playing else { return }
+                guard let currentPlayingIndex = self.currentAdItems.firstIndex(where: { $0.0 == interstitialPlayer.currentItem?.asset }) else { return }
+                
+                let playedAdsTotalDuration = self.currentAdItems.enumerated()
+                    .reduce(CMTime(seconds: 0, preferredTimescale: 600)) { partialResult, assetWithDuration in
+                        return assetWithDuration.offset < currentPlayingIndex ? partialResult + assetWithDuration.element.1 : partialResult
+                    }
+                
+                let elapsedTimeInInterstitial = (playedAdsTotalDuration + interstitialPlayer.currentTime()).seconds
+                self.elapsedTimeInInterstitial = elapsedTimeInInterstitial
+                
+                let interstitialPlayhead = interstitialStartDate + elapsedTimeInInterstitial
+                self.playhead = interstitialPlayhead * 1_000
+            })
+    }
     
 }

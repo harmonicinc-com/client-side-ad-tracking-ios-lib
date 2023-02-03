@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os
 
 let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
 let MAX_TOLERANCE_IN_SPEED: Double = 2
@@ -16,6 +17,11 @@ enum HarmonicAdTrackerError: Error {
 }
 
 public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
+    private static let logger = Logger(
+        subsystem: Bundle.module.bundleIdentifier!,
+        category: String(describing: HarmonicAdTracker.self)
+    )
+    
     @Published
     public private(set) var adPods: [AdBreak] = []
     
@@ -32,10 +38,6 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         if let pods = pods {
             HarmonicAdTracker.mergePods(existingPods: &adPods, pods: pods)
         }
-    }
-    
-    public func getAdPods() -> [AdBreak] {
-        return adPods
     }
     
     public func getPlayheadTime() -> Double {
@@ -85,6 +87,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
                     if !(200...299 ~= response.statusCode) {
                         throw HarmonicAdTrackerError.runtimeError("Failed to send beacon to \(urlString); Status \(response.statusCode)")
                     }
+                    Self.logger.trace("Sent beacon to : \(urlString, privacy: .public)")
                 }
                 
             })
@@ -93,12 +96,12 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
                 trackingEvent.reportingState = .done
             }
         } catch HarmonicAdTrackerError.runtimeError(let errorMessage) {
-            print("Failed to send beacon; the error message is: \(errorMessage)")
+            Self.logger.error("Failed to send beacon; the error message is: \(errorMessage, privacy: .public)")
             DispatchQueue.main.async {
                 trackingEvent.reportingState = .failed
             }
         } catch {
-            print("Failed to send beacon; unexpected error: \(error)")
+            Self.logger.error("Failed to send beacon; unexpected error: \(error, privacy: .public)")
             DispatchQueue.main.async {
                 trackingEvent.reportingState = .failed
             }

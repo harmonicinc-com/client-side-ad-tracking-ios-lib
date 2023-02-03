@@ -6,9 +6,14 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 public struct SessionView: View {
-    let playerObserver: PlayerObserver
+    
+    let player: AVPlayer
+    
+    @StateObject
+    var playerObserver = PlayerObserver()
     
     @EnvironmentObject
     var adTracker: HarmonicAdTracker
@@ -16,29 +21,31 @@ public struct SessionView: View {
     @EnvironmentObject
     var session: Session
     
-    @State
-    private var playheadDate: Date?
-    
-    @State
-    private var timeToNextAdBreak: TimeInterval?
-    
     private let dateFormatter: DateFormatter
     
-    public init(playerObserver: PlayerObserver) {
-        self.playerObserver = playerObserver
+    public init(player: AVPlayer) {
+        self.player = player
         self.dateFormatter = DateFormatter()
         self.dateFormatter.dateFormat = "dd/MM/yyyy HH:mm:ss"
     }
     
     public var body: some View {
         VStack(alignment: .leading) {
-            Text("Playhead: \(dateFormatter.string(from: playheadDate ?? .distantPast))")
+            Text("Playhead: \(dateFormatter.string(from: getPlayheadDate(playerObserver.playhead)))")
                 .bold()
-            Text("Time to next ad break: \(timeToNextAdBreak ?? .infinity)s")
-                .bold()
+            if let timeToNextAdBreak = getTimeToNextBreak(playhead: playerObserver.playhead) {
+                Text(String(format: "Time to next ad break: %.2fs", timeToNextAdBreak))
+                    .bold()
+            }
+            if let interstitialStart = getInterstitialStartDate(playerObserver.interstitialStartDate) {
+                Text("Last interstitial start: \(dateFormatter.string(from: interstitialStart))")
+            }
+            if let interstitialElapsed = playerObserver.elapsedTimeInInterstitial {
+                Text(String(format: "Last interstitial elapsed: %.2fs", interstitialElapsed))
+            }
             DisclosureGroup("Session Info") {
                 VStack(alignment: .leading) {
-                    Text("Media URL:")
+                    Text("Media URL")
                         .bold()
                     Text(session.sessionInfo.mediaUrl)
                         .font(.caption2)
@@ -55,9 +62,8 @@ public struct SessionView: View {
                         .textSelection(.enabled)
                 }
             }
-            .onReceive(playerObserver.$playhead) { playhead in
-                playheadDate = Date(timeIntervalSince1970: (playhead ?? 0) / 1_000)
-                timeToNextAdBreak = getTimeToNextBreak(playhead: playhead ?? 0) / 1_000
+            .onAppear {
+                self.playerObserver.setPlayer(player)
             }
         }
         .font(.caption)
@@ -65,20 +71,32 @@ public struct SessionView: View {
 }
 
 extension SessionView {
-    private func getTimeToNextBreak(playhead: Double) -> Double {
+    private func getPlayheadDate(_ playhead: Double?) -> Date {
+        return Date(timeIntervalSince1970: (playhead ?? 0) / 1_000)
+    }
+    
+    private func getTimeToNextBreak(playhead: Double?) -> Double? {
         if let minStartTime = (adTracker.adPods
-            .filter { $0.startTime ?? -.infinity > playhead }
-            .min { $0.startTime ?? -.infinity < $1.startTime ?? -.infinity }?.startTime) {
-            return minStartTime - playhead
+            .filter { ($0.startTime ?? -.infinity) > (playhead ?? 0) }
+            .min { ($0.startTime ?? -.infinity) < ($1.startTime ?? -.infinity) }?.startTime) {
+            return (minStartTime - (playhead ?? 0)) / 1_000
         } else {
-            return .infinity
+            return nil
+        }
+    }
+    
+    private func getInterstitialStartDate(_ start: Double?) -> Date? {
+        if let start = start {
+            return Date(timeIntervalSince1970: start / 1_000)
+        } else {
+            return nil
         }
     }
 }
 
 struct SessionInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        SessionView(playerObserver: PlayerObserver())
+        SessionView(player: AVPlayer())
             .environmentObject(sampleSession)
             .environmentObject(HarmonicAdTracker())
     }
