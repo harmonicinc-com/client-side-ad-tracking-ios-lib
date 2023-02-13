@@ -36,7 +36,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     
     public func updatePods(_ pods: [AdBreak]?) {
         if let pods = pods {
-            HarmonicAdTracker.mergePods(existingPods: &adPods, pods: pods)
+            HarmonicAdTracker.mergePods(existingPods: &adPods, pods: pods, lastPlayheadTime: lastPlayheadTime)
         }
     }
     

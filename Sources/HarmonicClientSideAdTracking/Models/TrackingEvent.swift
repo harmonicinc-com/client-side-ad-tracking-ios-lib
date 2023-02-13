@@ -46,3 +46,9 @@ public class TrackingEvent: Decodable, Identifiable, Hashable, ObservableObject 
         hasher.combine(id)
     }
 }
+
+extension TrackingEvent: CustomStringConvertible {
+    public var description: String {
+        return "TrackingEvent(type: \(event); start: \(Date(timeIntervalSince1970: (startTime ?? 0) / 1_000)))"
+    }
+}

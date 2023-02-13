@@ -35,3 +35,9 @@ public class Ad: Decodable, Identifiable, ObservableObject {
         self.trackingEvents = try container.decode([TrackingEvent].self, forKey: .trackingEvents)
     }
 }
+
+extension Ad: CustomStringConvertible {
+    public var description: String {
+        return "Ad(id: \(id); start: \(Date(timeIntervalSince1970: (startTime ?? 0) / 1_000)); duration: \((duration ?? 0) / 1_000); events: \(trackingEvents))"
+    }
+}

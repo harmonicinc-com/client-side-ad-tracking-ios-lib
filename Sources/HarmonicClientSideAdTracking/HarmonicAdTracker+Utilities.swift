@@ -7,10 +7,13 @@
 
 import Foundation
 
+let KEEP_PODS_FOR_MS: Double = 1_000 * 60 * 2   // 2 minutes
+
 extension HarmonicAdTracker {
     
-    static func mergePods(existingPods: inout [AdBreak], pods: [AdBreak]) {
+    static func mergePods(existingPods: inout [AdBreak], pods: [AdBreak], lastPlayheadTime: Double) {
         existingPods.removeAll { pod in
+            (pod.startTime ?? 0) + (pod.duration ?? 0) + KEEP_PODS_FOR_MS < lastPlayheadTime &&
             !pods.contains(where: { $0.id == pod.id })
         }
         
