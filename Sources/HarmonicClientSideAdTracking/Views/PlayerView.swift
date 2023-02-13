@@ -30,9 +30,11 @@ public struct PlayerView: View {
     
     public var body: some View {
         VStack {
-            VideoPlayer(player: playerVM.player)
+            VideoPlayer(player: playerVM.player, videoOverlay: {
+                VideoOverlayView()
+            })
 #if os(iOS)
-                .frame(height: 250)
+                .aspectRatio(CGSize(width: 16, height: 9), contentMode: .fit)
 #else
                 .frame(height: 360)
 #endif

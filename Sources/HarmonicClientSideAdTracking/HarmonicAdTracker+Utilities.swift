@@ -46,7 +46,7 @@ extension HarmonicAdTracker {
                 let newAd = Ad(id: ad.id,
                                startTime: ad.startTime,
                                duration: ad.duration,
-                               trackingEvents: ad.trackingEvents.map({ trackingEvent in
+                               trackingEvents: ad.trackingEvents.filter( { $0.event != .unknown } ).map({ trackingEvent in
                     return TrackingEvent(event: trackingEvent.event,
                                          startTime: trackingEvent.startTime,
                                          duration: trackingEvent.duration,

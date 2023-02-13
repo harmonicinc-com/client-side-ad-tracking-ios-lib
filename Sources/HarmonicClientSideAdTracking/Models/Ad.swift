@@ -38,6 +38,6 @@ public class Ad: Decodable, Identifiable, ObservableObject {
 
 extension Ad: CustomStringConvertible {
     public var description: String {
-        return "Ad(id: \(id); start: \(Date(timeIntervalSince1970: (startTime ?? 0) / 1_000)); duration: \((duration ?? 0) / 1_000); events: \(trackingEvents))"
+        return "Ad(id: \(id ?? "nil"); start: \(Date(timeIntervalSince1970: (startTime ?? 0) / 1_000)); duration: \((duration ?? 0) / 1_000); events: \(trackingEvents))"
     }
 }

@@ -49,6 +49,6 @@ public class TrackingEvent: Decodable, Identifiable, Hashable, ObservableObject 
 
 extension TrackingEvent: CustomStringConvertible {
     public var description: String {
-        return "TrackingEvent(type: \(event); start: \(Date(timeIntervalSince1970: (startTime ?? 0) / 1_000)))"
+        return "TrackingEvent(type: \(event ?? .unknown); start: \(Date(timeIntervalSince1970: (startTime ?? 0) / 1_000)))"
     }
 }

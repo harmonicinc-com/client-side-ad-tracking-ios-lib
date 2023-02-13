@@ -38,6 +38,6 @@ public class AdBreak: Decodable, Identifiable, ObservableObject {
 
 extension AdBreak: CustomStringConvertible {
     public var description: String {
-        return "AdBreak(id: \(id); start: \(Date(timeIntervalSince1970: (startTime ?? 0) / 1_000)); duration: \((duration ?? 0) / 1_000); ads: \(ads)"
+        return "AdBreak(id: \(id ?? "nil"); start: \(Date(timeIntervalSince1970: (startTime ?? 0) / 1_000)); duration: \((duration ?? 0) / 1_000); ads: \(ads)"
     }
 }
