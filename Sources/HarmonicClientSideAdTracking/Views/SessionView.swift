@@ -10,21 +10,33 @@ import AVFoundation
 
 public struct SessionView: View {
     
-    let player: AVPlayer
-    
     @StateObject
-    var playerObserver = PlayerObserver()
+    private var playerObserver = PlayerObserver()
     
     @EnvironmentObject
-    var adTracker: HarmonicAdTracker
+    private var adTracker: HarmonicAdTracker
     
     @EnvironmentObject
-    var session: Session
+    private var session: Session
+    
+    @EnvironmentObject
+    private var playerVM: PlayerViewModel
+    
+    @State
+    private var expandSession = true
+    
+    @State
+    private var expandMediaUrl = true
+    
+    @State
+    private var expandManifestUrl = true
+    
+    @State
+    private var expandAdTrackingMetadataUrl = true
     
     private let dateFormatter: DateFormatter
     
-    public init(player: AVPlayer) {
-        self.player = player
+    public init() {
         self.dateFormatter = DateFormatter()
         self.dateFormatter.dateFormat = "dd/MM/yyyy HH:mm:ss"
     }
@@ -43,27 +55,27 @@ public struct SessionView: View {
             if let interstitialElapsed = playerObserver.elapsedTimeInInterstitial {
                 Text(String(format: "Last interstitial elapsed: %.2fs", interstitialElapsed))
             }
-            DisclosureGroup("Session Info") {
-                VStack(alignment: .leading) {
-                    Text("Media URL")
-                        .bold()
-                    Text(session.sessionInfo.mediaUrl)
-                        .font(.caption2)
-                        .textSelection(.enabled)
-                    Text("Manifest URL")
-                        .bold()
-                    Text(session.sessionInfo.manifestUrl)
-                        .font(.caption2)
-                        .textSelection(.enabled)
-                    Text("Ad tracking metadata URL")
-                        .bold()
-                    Text(session.sessionInfo.adTrackingMetadataUrl)
-                        .font(.caption2)
-                        .textSelection(.enabled)
+            ExpandableListView("Session Info", isExpanded: $expandSession) {
+                ScrollView {
+                    VStack(alignment: .leading) {
+                        ExpandableListView("Media URL", isExpanded: $expandMediaUrl) {
+                            Text(session.sessionInfo.mediaUrl)
+                        }
+                        ExpandableListView("Manifest URL", isExpanded: $expandManifestUrl) {
+                            Text(session.sessionInfo.manifestUrl)
+                        }
+                        ExpandableListView("Ad tracking metadata URL", isExpanded: $expandAdTrackingMetadataUrl) {
+                            Text(session.sessionInfo.adTrackingMetadataUrl)
+                        }
+                    }
+                    .font(.caption2)
+#if os(iOS)
+                    .textSelection(.enabled)
+#endif
                 }
             }
             .onAppear {
-                self.playerObserver.setPlayer(player)
+                self.playerObserver.setPlayer(playerVM.player)
             }
         }
         .font(.caption)
@@ -96,8 +108,9 @@ extension SessionView {
 
 struct SessionInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        SessionView(player: AVPlayer())
+        SessionView()
             .environmentObject(sampleSession)
             .environmentObject(HarmonicAdTracker())
+            .environmentObject(PlayerViewModel())
     }
 }

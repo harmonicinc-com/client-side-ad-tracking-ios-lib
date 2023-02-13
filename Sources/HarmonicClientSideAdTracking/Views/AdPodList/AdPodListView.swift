@@ -9,21 +9,20 @@ import SwiftUI
 
 public struct AdPodListView: View {
     @EnvironmentObject
-    var adTracker: HarmonicAdTracker
+    private var adTracker: HarmonicAdTracker
     
     @State
     private var expandAdPods = true
     
-    public init() {
-    }
+    public init() {}
     
     public var body: some View {
         ScrollView {
-            DisclosureGroup("Tracking Events", isExpanded: $expandAdPods) {
+            ExpandableListView("Tracking Events", isExpanded: $expandAdPods, {
                 ForEach(adTracker.adPods) { pod in
                     AdBreakView(adBreak: pod)
                 }
-            }
+            })
             .font(.caption2)
         }
     }

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TrackingEventView: View {
     @ObservedObject
-    var trackingEvent: TrackingEvent
+    private var trackingEvent: TrackingEvent
     
     private let dateFormatter: DateFormatter
     
@@ -37,10 +37,12 @@ struct TrackingEventView: View {
                         .font(.caption2)
                         .lineLimit(2)
                         .truncationMode(.middle)
+                        .multilineTextAlignment(.leading)
                 }
                 Text("Time: \(dateString)")
                     .font(.caption2)
             }
+            Spacer()
         }
     }
 }

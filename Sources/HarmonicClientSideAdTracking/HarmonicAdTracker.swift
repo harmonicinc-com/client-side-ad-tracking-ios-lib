@@ -27,7 +27,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     
     private var lastPlayheadTime: Double = 0
     private var lastPlayheadUpdateTime: Double = 0
-        
+    
     public init(adPods: [AdBreak] = [], lastPlayheadTime: Double = 0, lastPlayheadUpdateTime: Double = 0) {
         self.adPods = adPods
         self.lastPlayheadTime = lastPlayheadTime
@@ -49,7 +49,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         if now == lastPlayheadUpdateTime {
             return
         }
-    
+        
         let speed = (time - lastPlayheadTime) / (now - lastPlayheadUpdateTime)
         if 0.nextUp...MAX_TOLERANCE_IN_SPEED ~= speed {
             await iterateTrackingEvents(time0: lastPlayheadTime, time1: time)

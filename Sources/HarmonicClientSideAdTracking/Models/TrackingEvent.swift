@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class TrackingEvent: Decodable, Identifiable, ObservableObject {
+public class TrackingEvent: Decodable, Identifiable, Hashable, ObservableObject {
     public var id: UUID? = UUID()
     public var event: EventType?
     public var startTime: Double?
@@ -36,5 +36,13 @@ public class TrackingEvent: Decodable, Identifiable, ObservableObject {
         self.startTime = try container.decodeIfPresent(Double.self, forKey: .startTime)
         self.duration = try container.decodeIfPresent(Double.self, forKey: .duration)
         self.signalingUrls = try container.decode([String].self, forKey: .signalingUrls)
+    }
+    
+    public static func == (lhs: TrackingEvent, rhs: TrackingEvent) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }

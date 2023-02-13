@@ -12,27 +12,30 @@ let BEACON_UPDATE_INTERVAL: TimeInterval = 0.5
 
 public struct PlayerView: View {
     
-    let player: AVPlayer
-    
     @StateObject
-    var playerObserver = PlayerObserver()
+    private var playerObserver = PlayerObserver()
     
     @EnvironmentObject
-    var session: Session
+    private var session: Session
     
     @EnvironmentObject
-    var adTracker: HarmonicAdTracker
+    private var adTracker: HarmonicAdTracker
+    
+    @EnvironmentObject
+    private var playerVM: PlayerViewModel
+    
+    public init() {}
     
     private let checkNeedSendBeaconTimer = Timer.publish(every: BEACON_UPDATE_INTERVAL, on: .main, in: .common).autoconnect()
     
-    public init(player: AVPlayer) {
-        self.player = player
-    }
-    
     public var body: some View {
         VStack {
-            VideoPlayer(player: player)
+            VideoPlayer(player: playerVM.player)
+#if os(iOS)
                 .frame(height: 250)
+#else
+                .frame(height: 360)
+#endif
                 .onReceive(checkNeedSendBeaconTimer) { _ in
                     Task {
                         await adTracker.needSendBeacon(time: playerObserver.playhead ?? 0)
@@ -40,16 +43,16 @@ public struct PlayerView: View {
                 }
                 .onReceive(session.$sessionInfo) { info in
                     if let url = URL(string: info.manifestUrl) {
-                        player.replaceCurrentItem(with: AVPlayerItem(url: url))
-                        player.play()
+                        playerVM.player.replaceCurrentItem(with: AVPlayerItem(url: url))
+                        playerVM.player.play()
                     }
                 }
                 .onAppear {
-                    playerObserver.setPlayer(player)
+                    playerObserver.setPlayer(playerVM.player)
                 }
                 .onDisappear {
-                    player.pause()
-                    player.replaceCurrentItem(with: nil)
+                    playerVM.player.pause()
+                    playerVM.player.replaceCurrentItem(with: nil)
                 }
         }
     }
@@ -57,8 +60,9 @@ public struct PlayerView: View {
 
 struct PlayerView_Previews: PreviewProvider {
     static var previews: some View {
-        PlayerView(player: AVPlayer())
+        PlayerView()
             .environmentObject(sampleSession)
             .environmentObject(HarmonicAdTracker())
+            .environmentObject(PlayerViewModel())
     }
 }

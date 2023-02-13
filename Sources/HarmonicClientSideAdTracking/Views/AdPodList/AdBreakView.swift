@@ -10,25 +10,25 @@ import SwiftUI
 let KEEP_PAST_AD_MS: Double = 2_000
 
 struct AdBreakView: View {
-    @EnvironmentObject
-    var adTracker: HarmonicAdTracker
-    
     @ObservedObject
     var adBreak: AdBreak
+    
+    @EnvironmentObject
+    private var adTracker: HarmonicAdTracker
     
     @State
     private var expandAdBreak = true
     
     var body: some View {
-        DisclosureGroup("Ad Pod: \(adBreak.id ?? "nil")", isExpanded: $expandAdBreak) {
+        ExpandableListView("Ad Pod: \(adBreak.id ?? "nil")", isExpanded: $expandAdBreak, {
             ForEach(adBreak.ads) { ad in
                 AdView(ad: ad, adBreakId: adBreak.id)
             }
-        }
+        })
         .onReceive(adTracker.$adPods) { adPods in
             if let pod = adPods.first(where: { $0.id == adBreak.id }),
-                let startTime = pod.startTime,
-                let duration = pod.duration {
+               let startTime = pod.startTime,
+               let duration = pod.duration {
                 if adBreak.expanded == nil {
                     expandAdBreak = adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
                 }
@@ -36,8 +36,8 @@ struct AdBreakView: View {
         }
         .onChange(of: expandAdBreak) { newValue in
             if let startTime = adBreak.startTime,
-                let duration = adBreak.duration,
-                newValue &&
+               let duration = adBreak.duration,
+               newValue &&
                 adTracker.getPlayheadTime() > startTime + duration + KEEP_PAST_AD_MS {
                 adBreak.expanded = newValue
             }
