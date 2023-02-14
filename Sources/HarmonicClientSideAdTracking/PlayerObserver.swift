@@ -5,10 +5,16 @@
 //  Created by Michael on 31/1/2023.
 //
 
-import Combine
 import AVFoundation
+import Combine
+import os
 
+@MainActor
 public class PlayerObserver: ObservableObject {
+    private static let logger = Logger(
+        subsystem: Bundle.module.bundleIdentifier!,
+        category: String(describing: PlayerObserver.self)
+    )
     
     @Published
     public private(set) var currentDate: Date?
@@ -22,13 +28,15 @@ public class PlayerObserver: ObservableObject {
     @Published
     public private(set) var elapsedTimeInInterstitial: Double?
     
-    private var interstitialPlayer: AVPlayer?
+    private var interstitialPlayer: AVQueuePlayer?
     
     private var currentAdItems: [(AVAsset, CMTime)] = []
     
     private var primaryPlayheadObservation: Any?
     
     private var interstitialPlayheadObservation: Any?
+    
+    private var currentInterstitialEventObservation: AnyCancellable?
     
     public func setPlayer(_ player: AVPlayer) {
         setPrimaryPlayheadObservation(player)
@@ -58,15 +66,24 @@ public class PlayerObserver: ObservableObject {
     }
     
     private func addObserverForCurrentInterstitialEvent(_ monitor: AVPlayerInterstitialEventMonitor) {
-        NotificationCenter.default.addObserver(
-            forName: AVPlayerInterstitialEventMonitor.currentEventDidChangeNotification,
-            object: monitor,
-            queue: nil) { notification in
-                let currentEvent = monitor.currentEvent
-                self.currentAdItems = currentEvent?.templateItems.map({ item in
-                    return (item.asset, item.asset.duration)
-                }) ?? []
+        currentInterstitialEventObservation = NotificationCenter.default.publisher(
+            for: AVPlayerInterstitialEventMonitor.currentEventDidChangeNotification,
+            object: monitor)
+        .sink { _ in
+            let currentEvent = monitor.currentEvent
+            self.currentAdItems = currentEvent?.templateItems.map({ item in
+                return (item.asset, item.asset.duration)
+            }) ?? []
+            if self.currentAdItems.isEmpty {
+                Self.logger.warning("No ads found in current event of the interstitial monitor, try looking at the interstital player's queued ads now...")
+                let interstitialPlayerItems = self.interstitialPlayer?.items() ?? []
+                if !interstitialPlayerItems.isEmpty {
+                    self.currentAdItems = interstitialPlayerItems.map({ item in
+                        return (item.asset, item.asset.duration)
+                    })
+                }
             }
+        }
     }
     
     private func setInterstitialPlayheadObservation(_ monitor: AVPlayerInterstitialEventMonitor) {
@@ -82,7 +99,10 @@ public class PlayerObserver: ObservableObject {
                 guard let interstitialPlayer = self.interstitialPlayer else { return }
                 
                 guard interstitialPlayer.timeControlStatus == .playing else { return }
-                guard let currentPlayingIndex = self.currentAdItems.firstIndex(where: { $0.0 == interstitialPlayer.currentItem?.asset }) else { return }
+                guard let currentPlayingIndex = self.currentAdItems.firstIndex(where: { $0.0 == interstitialPlayer.currentItem?.asset }) else {
+                    Self.logger.warning("Cannot find current interstitial item in list.")
+                    return
+                }
                 
                 let playedAdsTotalDuration = self.currentAdItems.enumerated()
                     .reduce(CMTime(seconds: 0, preferredTimescale: 600)) { partialResult, assetWithDuration in

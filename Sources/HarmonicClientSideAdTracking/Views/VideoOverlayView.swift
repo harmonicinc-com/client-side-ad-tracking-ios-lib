@@ -22,7 +22,7 @@ struct VideoOverlayView: View {
     private var textToDisplay: String {
         var text = "Current time: \(dateFormatter.string(from: playerObserver.currentDate ?? Date()))"
         if let playheadDate = playerObserver.playhead, let currentDate = playerObserver.currentDate?.timeIntervalSince1970 {
-            text += String(format: "\nLatency: %.2fs", currentDate - playheadDate / 1_000)
+            text += String(format: "\nLive latency: %.2fs", currentDate - playheadDate / 1_000)
         }
         return text
     }

@@ -11,11 +11,13 @@ import os
 let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
 let MAX_TOLERANCE_IN_SPEED: Double = 2
 let MAX_TOLERANCE_EVENT_END_TIME: Double = 1_000
+let KEEP_PODS_FOR_MS: Double = 1_000 * 60 * 2   // 2 minutes
 
 enum HarmonicAdTrackerError: Error {
     case runtimeError(String)
 }
 
+@MainActor
 public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     private static let logger = Logger(
         subsystem: Bundle.module.bundleIdentifier!,
@@ -34,13 +36,13 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         self.lastPlayheadUpdateTime = lastPlayheadUpdateTime
     }
     
-    public func updatePods(_ pods: [AdBreak]?) {
+    public func updatePods(_ pods: [AdBreak]?) async {
         if let pods = pods {
-            HarmonicAdTracker.mergePods(existingPods: &adPods, pods: pods, lastPlayheadTime: lastPlayheadTime)
+            mergePods(pods)
         }
     }
     
-    public func getPlayheadTime() -> Double {
+    public func getPlayheadTime() async -> Double {
         return lastPlayheadTime
     }
     
@@ -61,9 +63,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     // MARK: Private
     
     private func sendBeacon(_ trackingEvent: TrackingEvent) async {
-        DispatchQueue.main.async {
-            trackingEvent.reportingState = .connecting
-        }
+        trackingEvent.reportingState = .connecting
         
         do {
             try await withThrowingTaskGroup(of: (String, HTTPURLResponse).self,
@@ -92,19 +92,13 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
                 
             })
             
-            DispatchQueue.main.async {
-                trackingEvent.reportingState = .done
-            }
+            trackingEvent.reportingState = .done
         } catch HarmonicAdTrackerError.runtimeError(let errorMessage) {
             Self.logger.error("Failed to send beacon; the error message is: \(errorMessage, privacy: .public)")
-            DispatchQueue.main.async {
-                trackingEvent.reportingState = .failed
-            }
+            trackingEvent.reportingState = .failed
         } catch {
             Self.logger.error("Failed to send beacon; unexpected error: \(error, privacy: .public)")
-            DispatchQueue.main.async {
-                trackingEvent.reportingState = .failed
-            }
+            trackingEvent.reportingState = .failed
         }
     }
     
@@ -149,6 +143,57 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
             }
             
         }
+    }
+    
+    private func mergePods(_ newPods: [AdBreak]) {
+        adPods.removeAll { pod in
+            (pod.startTime ?? 0) + (pod.duration ?? 0) + KEEP_PODS_FOR_MS < lastPlayheadTime &&
+            !newPods.contains(where: { $0.id == pod.id })
+        }
+        
+        for pod in newPods {
+            let existingIndex = adPods.firstIndex(where: { $0.id == pod.id })
+            var currentIndex = adPods.count
+            if let existingIndex = existingIndex {
+                currentIndex = existingIndex
+                adPods[existingIndex].duration = pod.duration
+            } else {
+                let newPod = AdBreak(id: pod.id,
+                                     startTime: pod.startTime,
+                                     duration: pod.duration,
+                                     ads: [])
+                adPods.append(newPod)
+            }
+            mergeAds(existingAds: &adPods[currentIndex].ads, newAds: pod.ads)
+        }
+        
+        adPods = adPods.sorted(by: { ($0.startTime ?? 0) < ($1.startTime ?? 0) })
+    }
+    
+    private func mergeAds(existingAds: inout [Ad], newAds: [Ad]) {
+        existingAds.removeAll { ad in
+            !newAds.contains(where: { $0.id == ad.id })
+        }
+        
+        for ad in newAds {
+            if let existingIndex = existingAds.firstIndex(where: { $0.id == ad.id }) {
+                existingAds[existingIndex].duration = ad.duration
+            } else {
+                let newAd = Ad(id: ad.id,
+                               startTime: ad.startTime,
+                               duration: ad.duration,
+                               trackingEvents: ad.trackingEvents.filter( { $0.event != .unknown } ).map({ trackingEvent in
+                    return TrackingEvent(event: trackingEvent.event,
+                                         startTime: trackingEvent.startTime,
+                                         duration: trackingEvent.duration,
+                                         signalingUrls: trackingEvent.signalingUrls,
+                                         reportingState: .idle)})
+                )
+                existingAds.append(newAd)
+            }
+        }
+        
+        existingAds = existingAds.sorted(by: { ($0.startTime ?? 0) < ($1.startTime ?? 0) })
     }
     
 }

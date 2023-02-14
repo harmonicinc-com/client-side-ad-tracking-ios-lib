@@ -30,15 +30,14 @@ struct AdBreakView: View {
                let startTime = pod.startTime,
                let duration = pod.duration {
                 if adBreak.expanded == nil {
-                    expandAdBreak = adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
+                    Task {
+                        expandAdBreak = await adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
+                    }
                 }
             }
         }
         .onChange(of: expandAdBreak) { newValue in
-            if let startTime = adBreak.startTime,
-               let duration = adBreak.duration,
-               newValue &&
-                adTracker.getPlayheadTime() > startTime + duration + KEEP_PAST_AD_MS {
+            if newValue {
                 adBreak.expanded = newValue
             }
         }

@@ -49,7 +49,9 @@ struct AdView: View {
                let startTime = ad.startTime,
                let duration = ad.duration {
                 if ad.expanded == nil {
-                    expandAd = adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
+                    Task {
+                        expandAd = await adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
+                    }
                 }
                 let trackingEvents = ad.trackingEvents.filter({ trackingEvent in
                     let targetEvents: [EventType] = [.firstQuartile, .midpoint, .thirdQuartile, .complete]
@@ -59,10 +61,7 @@ struct AdView: View {
             }
         }
         .onChange(of: expandAd) { newValue in
-            if let startTime = ad.startTime,
-               let duration = ad.duration,
-               newValue &&
-                adTracker.getPlayheadTime() > startTime + duration + KEEP_PAST_AD_MS {
+            if newValue {
                 ad.expanded = newValue
             }
         }
