@@ -34,28 +34,32 @@ public struct PlayerView: View {
                 VideoOverlayView()
             })
 #if os(iOS)
-                .aspectRatio(CGSize(width: 16, height: 9), contentMode: .fit)
+            .aspectRatio(CGSize(width: 16, height: 9), contentMode: .fit)
 #else
-                .frame(height: 360)
+            .frame(height: 360)
 #endif
-                .onReceive(checkNeedSendBeaconTimer) { _ in
-                    Task {
-                        await adTracker.needSendBeacon(time: playerObserver.playhead ?? 0)
-                    }
+            .onReceive(checkNeedSendBeaconTimer) { _ in
+                if let interstitialPlayerStatus = playerObserver.interstitialPlayerStatus,
+                   interstitialPlayerStatus != .playing {
+                    return
                 }
-                .onReceive(session.$sessionInfo) { info in
-                    if let url = URL(string: info.manifestUrl) {
-                        playerVM.player.replaceCurrentItem(with: AVPlayerItem(url: url))
-                        playerVM.player.play()
-                    }
+                Task {
+                    await adTracker.needSendBeacon(time: playerObserver.playhead ?? 0)
                 }
-                .onAppear {
-                    playerObserver.setPlayer(playerVM.player)
+            }
+            .onReceive(session.$sessionInfo) { info in
+                if let url = URL(string: info.manifestUrl) {
+                    playerVM.player.replaceCurrentItem(with: AVPlayerItem(url: url))
+                    playerVM.player.play()
                 }
-                .onDisappear {
-                    playerVM.player.pause()
-                    playerVM.player.replaceCurrentItem(with: nil)
-                }
+            }
+            .onAppear {
+                playerObserver.setPlayer(playerVM.player)
+            }
+            .onDisappear {
+                playerVM.player.pause()
+                playerVM.player.replaceCurrentItem(with: nil)
+            }
         }
     }
 }

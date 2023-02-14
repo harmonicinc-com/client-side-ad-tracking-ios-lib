@@ -28,6 +28,9 @@ public class PlayerObserver: ObservableObject {
     @Published
     public private(set) var elapsedTimeInInterstitial: Double?
     
+    @Published
+    public private(set) var interstitialPlayerStatus: AVPlayer.TimeControlStatus?
+    
     private var interstitialPlayer: AVQueuePlayer?
     
     private var currentAdItems: [(AVAsset, CMTime)] = []
@@ -38,12 +41,16 @@ public class PlayerObserver: ObservableObject {
     
     private var currentInterstitialEventObservation: AnyCancellable?
     
+    private var interstitialPlayerStatusObservation: AnyCancellable?
+    
     public func setPlayer(_ player: AVPlayer) {
         setPrimaryPlayheadObservation(player)
         
         let interstitialMonitor = AVPlayerInterstitialEventMonitor(primaryPlayer: player)
         
         interstitialPlayer = interstitialMonitor.interstitialPlayer
+        
+        setInterstitialPlayerStatusObservation(interstitialMonitor.interstitialPlayer)
         
         addObserverForCurrentInterstitialEvent(interstitialMonitor)
         
@@ -84,6 +91,15 @@ public class PlayerObserver: ObservableObject {
                 }
             }
         }
+    }
+    
+    private func setInterstitialPlayerStatusObservation(_ interstitialPlayer: AVPlayer) {
+        interstitialPlayerStatusObservation = interstitialPlayer.publisher(for: \.timeControlStatus)
+            .sink(receiveValue: { newStatus in
+                DispatchQueue.main.async {
+                    self.interstitialPlayerStatus = newStatus
+                }
+            })
     }
     
     private func setInterstitialPlayheadObservation(_ monitor: AVPlayerInterstitialEventMonitor) {
