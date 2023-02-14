@@ -39,11 +39,11 @@ public struct PlayerView: View {
             .frame(height: 360)
 #endif
             .onReceive(checkNeedSendBeaconTimer) { _ in
-                if let interstitialPlayerStatus = playerObserver.interstitialPlayerStatus,
-                   interstitialPlayerStatus != .playing {
-                    return
-                }
                 Task {
+                    if let interstitialsSkipped = playerObserver.interstitialsSkipped,
+                       interstitialsSkipped {
+                        return
+                    }
                     await adTracker.needSendBeacon(time: playerObserver.playhead ?? 0)
                 }
             }

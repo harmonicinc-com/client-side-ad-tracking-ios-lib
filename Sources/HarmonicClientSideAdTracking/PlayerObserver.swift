@@ -29,7 +29,7 @@ public class PlayerObserver: ObservableObject {
     public private(set) var elapsedTimeInInterstitial: Double?
     
     @Published
-    public private(set) var interstitialPlayerStatus: AVPlayer.TimeControlStatus?
+    public private(set) var interstitialsSkipped: Bool?
     
     private var interstitialPlayer: AVQueuePlayer?
     
@@ -57,6 +57,12 @@ public class PlayerObserver: ObservableObject {
         setInterstitialPlayheadObservation(interstitialMonitor)
     }
     
+    private func setAdItems(with playerItems: [AVPlayerItem]) async {
+        self.currentAdItems = playerItems.map({ item in
+            return (item.asset, item.asset.duration)
+        })
+    }
+    
     private func setPrimaryPlayheadObservation(_ player: AVPlayer) {
         primaryPlayheadObservation = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.1, preferredTimescale: 600),
@@ -76,28 +82,32 @@ public class PlayerObserver: ObservableObject {
         currentInterstitialEventObservation = NotificationCenter.default.publisher(
             for: AVPlayerInterstitialEventMonitor.currentEventDidChangeNotification,
             object: monitor)
-        .sink { _ in
+        .sink(receiveValue: { _ in
             let currentEvent = monitor.currentEvent
-            self.currentAdItems = currentEvent?.templateItems.map({ item in
-                return (item.asset, item.asset.duration)
-            }) ?? []
-            if self.currentAdItems.isEmpty {
-                Self.logger.warning("No ads found in current event of the interstitial monitor, try looking at the interstital player's queued ads now...")
-                let interstitialPlayerItems = self.interstitialPlayer?.items() ?? []
-                if !interstitialPlayerItems.isEmpty {
-                    self.currentAdItems = interstitialPlayerItems.map({ item in
-                        return (item.asset, item.asset.duration)
-                    })
+            Task {
+                await self.setAdItems(with: currentEvent?.templateItems ?? [])
+                if self.currentAdItems.isEmpty {
+                    Self.logger.warning("No ads found in current event of the interstitial monitor, try looking at the interstital player's queued ads now...")
+                    let interstitialPlayerItems = self.interstitialPlayer?.items() ?? []
+                    if !interstitialPlayerItems.isEmpty {
+                        await self.setAdItems(with: interstitialPlayerItems)
+                    }
                 }
             }
-        }
+        })
     }
     
     private func setInterstitialPlayerStatusObservation(_ interstitialPlayer: AVPlayer) {
         interstitialPlayerStatusObservation = interstitialPlayer.publisher(for: \.timeControlStatus)
             .sink(receiveValue: { newStatus in
                 DispatchQueue.main.async {
-                    self.interstitialPlayerStatus = newStatus
+                    if let interstitialPlayer = self.interstitialPlayer,
+                       !interstitialPlayer.items().isEmpty,
+                       newStatus != .playing {
+                        self.interstitialsSkipped = true
+                    } else {
+                        self.interstitialsSkipped = false
+                    }
                 }
             })
     }
