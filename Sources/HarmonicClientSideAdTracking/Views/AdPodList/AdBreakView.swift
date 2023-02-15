@@ -37,9 +37,7 @@ struct AdBreakView: View {
             }
         }
         .onChange(of: expandAdBreak) { newValue in
-            if newValue {
-                adBreak.expanded = newValue
-            }
+            adBreak.expanded = newValue
         }
     }
 }

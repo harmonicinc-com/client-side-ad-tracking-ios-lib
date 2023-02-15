@@ -49,6 +49,7 @@ public struct PlayerView: View {
             }
             .onReceive(session.$sessionInfo) { info in
                 if let url = URL(string: info.manifestUrl) {
+                    playerVM.player.pause()
                     playerVM.player.replaceCurrentItem(with: AVPlayerItem(url: url))
                     playerVM.player.play()
                 }

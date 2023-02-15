@@ -61,9 +61,7 @@ struct AdView: View {
             }
         }
         .onChange(of: expandAd) { newValue in
-            if newValue {
-                ad.expanded = newValue
-            }
+            ad.expanded = newValue
         }
     }
 }
