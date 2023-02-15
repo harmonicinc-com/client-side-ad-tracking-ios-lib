@@ -69,7 +69,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         timeJumpObservation = NotificationCenter.default.publisher(for: AVPlayerItem.timeJumpedNotification)
             .sink(receiveValue: { [weak self] _ in
                 guard let self = self else { return }
-                if !self.playheadIsIncludedInStoredAdPods() {
+                if !self.playheadIsIncludedInStoredAdPods(playhead: self.lastPlayheadTime) {
                     Self.logger.trace("Detected time jump, resetting ad pods.")
                     Task {
                         await self.resetAdPods()
@@ -216,10 +216,10 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         existingAds = existingAds.sorted(by: { ($0.startTime ?? 0) < ($1.startTime ?? 0) })
     }
     
-    private func playheadIsIncludedInStoredAdPods() -> Bool {
+    public func playheadIsIncludedInStoredAdPods(playhead: Double) -> Bool {
         for adPod in adPods {
             if let start = adPod.startTime, let duration = adPod.duration {
-                if start...(start + duration) ~= lastPlayheadTime {
+                if start...(start + duration) ~= playhead {
                     return true
                 }
             }

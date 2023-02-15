@@ -39,12 +39,14 @@ public struct PlayerView: View {
             .frame(height: 360)
 #endif
             .onReceive(checkNeedSendBeaconTimer) { _ in
+                guard let playhead = playerObserver.playhead else { return }
                 Task {
                     if let interstitialsSkipped = playerObserver.interstitialsSkipped,
-                       interstitialsSkipped {
+                       interstitialsSkipped,
+                       adTracker.playheadIsIncludedInStoredAdPods(playhead: playhead) {
                         return
                     }
-                    await adTracker.needSendBeacon(time: playerObserver.playhead ?? 0)
+                    await adTracker.needSendBeacon(time: playhead)
                 }
             }
             .onReceive(session.$sessionInfo) { info in
