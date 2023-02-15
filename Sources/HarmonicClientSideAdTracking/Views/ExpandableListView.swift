@@ -23,6 +23,7 @@ struct ExpandableListView<Content: View> : View {
 #if os(iOS)
         DisclosureGroup(label, isExpanded: isExpanded) {
             content()
+                .padding(.leading, 5)
         }
 #else
         VStack(alignment: .leading) {

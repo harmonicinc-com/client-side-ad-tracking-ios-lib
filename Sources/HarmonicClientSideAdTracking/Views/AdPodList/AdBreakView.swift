@@ -20,7 +20,7 @@ struct AdBreakView: View {
     private var expandAdBreak = true
     
     var body: some View {
-        ExpandableListView("Ad Pod: \(adBreak.id ?? "nil")", isExpanded: $expandAdBreak, {
+        ExpandableListView("Ad Break: \(adBreak.id ?? "nil")", isExpanded: $expandAdBreak, {
             ForEach(adBreak.ads) { ad in
                 AdView(ad: ad, adBreakId: adBreak.id)
             }

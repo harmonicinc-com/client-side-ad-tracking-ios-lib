@@ -23,7 +23,7 @@ public struct SessionView: View {
     private var playerVM: PlayerViewModel
     
     @State
-    private var expandSession = true
+    private var expandSession = false
     
     @State
     private var expandMediaUrl = true

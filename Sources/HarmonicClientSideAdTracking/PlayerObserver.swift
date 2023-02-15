@@ -66,10 +66,8 @@ public class PlayerObserver: ObservableObject {
         setInterstitialPlayheadObservation(interstitialMonitor)
     }
     
-    private func setAdItems(with playerItems: [AVPlayerItem]) async {
-        self.currentAdItems = playerItems.map({ item in
-            return (item.asset, item.asset.duration)
-        })
+    private func setAdItems(_ adItems: [(AVAsset, CMTime)]) async {
+        self.currentAdItems = adItems
     }
     
     private func setPrimaryPlayheadObservation(_ player: AVPlayer) {
@@ -103,12 +101,17 @@ public class PlayerObserver: ObservableObject {
         .sink(receiveValue: { _ in
             let currentEvent = monitor.currentEvent
             Task {
-                await self.setAdItems(with: currentEvent?.templateItems ?? [])
+                let currentEventItems = (currentEvent?.templateItems ?? []).map({ item in
+                    return (item.asset, item.asset.duration)
+                })
+                await self.setAdItems(currentEventItems)
                 if self.currentAdItems.isEmpty {
-                    Self.logger.warning("No ads found in current event of the interstitial monitor, try looking at the interstital player's queued ads now...")
-                    let interstitialPlayerItems = self.interstitialPlayer?.items() ?? []
+                    let interstitialPlayerItems = (self.interstitialPlayer?.items() ?? []).map({ item in
+                        return (item.asset, item.asset.duration)
+                    })
                     if !interstitialPlayerItems.isEmpty {
-                        await self.setAdItems(with: interstitialPlayerItems)
+                        Self.logger.warning("No ads found in current event of the interstitial monitor, using the interstital player's queued ads instead.")
+                        await self.setAdItems(interstitialPlayerItems)
                     }
                 }
             }

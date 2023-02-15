@@ -5,7 +5,8 @@
 //  Created by Michael on 18/1/2023.
 //
 
-import Foundation
+import AVFoundation
+import Combine
 import os
 
 let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
@@ -29,11 +30,13 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     
     private var lastPlayheadTime: Double = 0
     private var lastPlayheadUpdateTime: Double = 0
+    private var timeJumpObservation: AnyCancellable?
     
     public init(adPods: [AdBreak] = [], lastPlayheadTime: Double = 0, lastPlayheadUpdateTime: Double = 0) {
         self.adPods = adPods
         self.lastPlayheadTime = lastPlayheadTime
         self.lastPlayheadUpdateTime = lastPlayheadUpdateTime
+        setTimeJumpObservation()
     }
     
     public func updatePods(_ pods: [AdBreak]?) async {
@@ -61,6 +64,23 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     }
     
     // MARK: Private
+    
+    private func setTimeJumpObservation() {
+        timeJumpObservation = NotificationCenter.default.publisher(for: AVPlayerItem.timeJumpedNotification)
+            .sink(receiveValue: { [weak self] _ in
+                guard let self = self else { return }
+                if !self.playheadIsIncludedInStoredAdPods() {
+                    Self.logger.trace("Detected time jump, resetting ad pods.")
+                    Task {
+                        await self.resetAdPods()
+                    }
+                }
+            })
+    }
+    
+    private func resetAdPods() async {
+        self.adPods.removeAll()
+    }
     
     private func sendBeacon(_ trackingEvent: TrackingEvent) async {
         trackingEvent.reportingState = .connecting
@@ -194,6 +214,18 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         }
         
         existingAds = existingAds.sorted(by: { ($0.startTime ?? 0) < ($1.startTime ?? 0) })
+    }
+    
+    private func playheadIsIncludedInStoredAdPods() -> Bool {
+        for adPod in adPods {
+            if let start = adPod.startTime, let duration = adPod.duration {
+                if start...(start + duration) ~= lastPlayheadTime {
+                    return true
+                }
+            }
+        }
+        
+        return false
     }
     
 }
