@@ -52,7 +52,11 @@ public struct PlayerView: View {
             .onReceive(session.$sessionInfo) { info in
                 if let url = URL(string: info.manifestUrl) {
                     playerVM.player.pause()
-                    playerVM.player.replaceCurrentItem(with: AVPlayerItem(url: url))
+                    
+                    let playerItem = AVPlayerItem(url: url)
+                    playerItem.automaticallyPreservesTimeOffsetFromLive = true
+                    playerVM.player.replaceCurrentItem(with: playerItem)
+                    
                     playerVM.player.play()
                 }
             }
