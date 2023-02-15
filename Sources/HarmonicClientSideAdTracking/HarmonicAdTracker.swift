@@ -10,7 +10,7 @@ import Combine
 import os
 
 let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
-let MAX_TOLERANCE_IN_SPEED: Double = 2
+let MAX_TOLERANCE_IN_SPEED: Double = 2.5
 let MAX_TOLERANCE_EVENT_END_TIME: Double = 1_000
 let KEEP_PODS_FOR_MS: Double = 1_000 * 60 * 2   // 2 minutes
 
