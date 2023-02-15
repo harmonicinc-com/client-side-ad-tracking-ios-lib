@@ -23,6 +23,9 @@ public class PlayerObserver: ObservableObject {
     public private(set) var playhead: Double?
     
     @Published
+    public private(set) var primaryStatus: AVPlayer.TimeControlStatus?
+    
+    @Published
     public private(set) var interstitialStartDate: Double?
     
     @Published
@@ -37,14 +40,20 @@ public class PlayerObserver: ObservableObject {
     
     private var primaryPlayheadObservation: Any?
     
+    private var primaryPlayerStatusObservation: AnyCancellable?
+    
     private var interstitialPlayheadObservation: Any?
     
     private var currentInterstitialEventObservation: AnyCancellable?
     
     private var interstitialPlayerStatusObservation: AnyCancellable?
     
+    public init() {}
+    
     public func setPlayer(_ player: AVPlayer) {
         setPrimaryPlayheadObservation(player)
+        
+        setPrimaryPlayerStatusObservation(player)
         
         let interstitialMonitor = AVPlayerInterstitialEventMonitor(primaryPlayer: player)
         
@@ -74,6 +83,15 @@ public class PlayerObserver: ObservableObject {
                         self.playhead = currentTime * 1_000
                         self.currentDate = Date.now
                     }
+                }
+            })
+    }
+    
+    private func setPrimaryPlayerStatusObservation(_ player: AVPlayer) {
+        primaryPlayerStatusObservation = player.publisher(for: \.timeControlStatus)
+            .sink(receiveValue: { newStatus in
+                DispatchQueue.main.async {
+                    self.primaryStatus = newStatus
                 }
             })
     }
