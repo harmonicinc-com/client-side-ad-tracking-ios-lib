@@ -20,7 +20,7 @@ struct AdView: View {
     private var expandAd = true
     
     @FocusState
-    private var trackingEvent: TrackingEvent?
+    private var trackingEventType: EventType?
     
     public init(ad: Ad, adBreakId: String? = nil) {
         self.ad = ad
@@ -39,7 +39,7 @@ struct AdView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(-20)
                 }
-                .focused($trackingEvent, equals: trackingEvent)
+                .focused($trackingEventType, equals: trackingEvent.event)
 #endif
             }
         })
@@ -53,11 +53,8 @@ struct AdView: View {
                         expandAd = await adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
                     }
                 }
-                let trackingEvents = ad.trackingEvents.filter({ trackingEvent in
-                    let targetEvents: [EventType] = [.firstQuartile, .midpoint, .thirdQuartile, .complete]
-                    return targetEvents.contains(trackingEvent.event ?? .unknown) && trackingEvent.reportingState == .done
-                })
-                trackingEvent = trackingEvents.last
+                let trackingEvents = ad.trackingEvents.filter({ ($0.reportingState) == .done })
+                trackingEventType = trackingEvents.last?.event
             }
         }
         .onChange(of: expandAd) { newValue in
