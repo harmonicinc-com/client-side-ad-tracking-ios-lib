@@ -41,9 +41,9 @@ public struct PlayerView: View {
             .onReceive(checkNeedSendBeaconTimer) { _ in
                 guard let playhead = playerObserver.playhead else { return }
                 Task {
-                    if let interstitialsSkipped = playerObserver.interstitialsSkipped,
-                       interstitialsSkipped,
-                       adTracker.playheadIsIncludedInStoredAdPods(playhead: playhead) {
+                    if let status = playerObserver.interstitialStatus,
+                        status != .playing,
+                        adTracker.playheadIsIncludedInStoredAdPods(playhead: playhead) {
                         return
                     }
                     await adTracker.needSendBeacon(time: playhead)

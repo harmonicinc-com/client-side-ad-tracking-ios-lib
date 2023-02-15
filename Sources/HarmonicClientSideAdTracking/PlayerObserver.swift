@@ -32,7 +32,7 @@ public class PlayerObserver: ObservableObject {
     public private(set) var elapsedTimeInInterstitial: Double?
     
     @Published
-    public private(set) var interstitialsSkipped: Bool?
+    public private(set) var interstitialStatus: AVPlayer.TimeControlStatus?
     
     private var interstitialPlayer: AVQueuePlayer?
     
@@ -122,13 +122,7 @@ public class PlayerObserver: ObservableObject {
         interstitialPlayerStatusObservation = interstitialPlayer.publisher(for: \.timeControlStatus)
             .sink(receiveValue: { newStatus in
                 DispatchQueue.main.async {
-                    if let interstitialPlayer = self.interstitialPlayer,
-                       !interstitialPlayer.items().isEmpty,
-                       newStatus != .playing {
-                        self.interstitialsSkipped = true
-                    } else {
-                        self.interstitialsSkipped = false
-                    }
+                    self.interstitialStatus = newStatus
                 }
             })
     }

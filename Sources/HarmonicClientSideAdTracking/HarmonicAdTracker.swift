@@ -219,7 +219,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     public func playheadIsIncludedInStoredAdPods(playhead: Double) -> Bool {
         for adPod in adPods {
             if let start = adPod.startTime, let duration = adPod.duration {
-                if start...(start + duration) ~= playhead {
+                if start...(start + duration + AD_END_TRACKING_EVENT_TIME_TOLERANCE) ~= playhead {
                     return true
                 }
             }
