@@ -13,5 +13,9 @@ public class PlayerViewModel: ObservableObject {
     public private(set) var player = AVPlayer()
     
     public init() {}
+    
+    public func setPlayer(_ player: AVPlayer) {
+        self.player = player
+    }
 
 }
