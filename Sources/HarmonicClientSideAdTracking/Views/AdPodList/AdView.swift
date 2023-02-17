@@ -53,7 +53,7 @@ struct AdView: View {
                         expandAd = await adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
                     }
                 }
-                let trackingEvents = ad.trackingEvents.filter({ ($0.reportingState) == .done })
+                let trackingEvents = ad.trackingEvents.filter({ ($0.reportingState) != .idle })
                 trackingEventType = trackingEvents.last?.event
             }
         }
