@@ -168,7 +168,6 @@ public class PlayerObserver: ObservableObject {
                 let interstitialPlayhead = interstitialStartDate + elapsedTimeInInterstitial
                 DispatchQueue.main.async {
                     self.playhead = interstitialPlayhead * 1_000
-                    self.currentDate = Date.now
                 }
             })
     }
