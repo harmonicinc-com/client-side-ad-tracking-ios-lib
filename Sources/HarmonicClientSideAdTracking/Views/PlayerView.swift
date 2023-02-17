@@ -50,19 +50,10 @@ public struct PlayerView: View {
                 }
             }
             .onReceive(session.$sessionInfo) { info in
-                if let url = URL(string: info.manifestUrl) {
-                    playerVM.player.pause()
-                    playerVM.player.replaceCurrentItem(with: nil)
-                    
-                    let playerItem = AVPlayerItem(url: url)
-                    playerItem.automaticallyPreservesTimeOffsetFromLive = session.automaticallyPreservesTimeOffsetFromLive
-                    playerVM.player.replaceCurrentItem(with: playerItem)
-                    
-                    playerVM.player.play()
-                }
+                reload(with: info.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: session.automaticallyPreservesTimeOffsetFromLive)
             }
             .onReceive(session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
-                playerVM.player.currentItem?.automaticallyPreservesTimeOffsetFromLive = enabled
+                reload(with: session.sessionInfo.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: enabled)
             })
             .onAppear {
                 playerObserver.setPlayer(playerVM.player)
@@ -71,6 +62,21 @@ public struct PlayerView: View {
                 playerVM.player.pause()
                 playerVM.player.replaceCurrentItem(with: nil)
             }
+        }
+    }
+}
+
+extension PlayerView {
+    private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
+        if let url = URL(string: urlString) {
+            playerVM.player.pause()
+            playerVM.player.replaceCurrentItem(with: nil)
+            
+            let playerItem = AVPlayerItem(url: url)
+            playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
+            playerVM.player.replaceCurrentItem(with: playerItem)
+            
+            playerVM.player.play()
         }
     }
 }
