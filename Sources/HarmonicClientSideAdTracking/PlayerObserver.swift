@@ -38,6 +38,8 @@ public class PlayerObserver: ObservableObject {
     
     private var currentAdItems: [(AVAsset, CMTime)] = []
     
+    private var currentDateTimer: AnyCancellable?
+    
     private var primaryPlayheadObservation: Any?
     
     private var primaryPlayerStatusObservation: AnyCancellable?
@@ -51,6 +53,8 @@ public class PlayerObserver: ObservableObject {
     public init() {}
     
     public func setPlayer(_ player: AVPlayer) {
+        setCurrentDateTimer()
+        
         setPrimaryPlayheadObservation(player)
         
         setPrimaryPlayerStatusObservation(player)
@@ -66,8 +70,11 @@ public class PlayerObserver: ObservableObject {
         setInterstitialPlayheadObservation(interstitialMonitor)
     }
     
-    private func setAdItems(_ adItems: [(AVAsset, CMTime)]) async {
-        self.currentAdItems = adItems
+    private func setCurrentDateTimer() {
+        currentDateTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+            .sink { date in
+                self.currentDate = date
+            }
     }
     
     private func setPrimaryPlayheadObservation(_ player: AVPlayer) {
@@ -79,7 +86,6 @@ public class PlayerObserver: ObservableObject {
                    self.interstitialPlayer?.timeControlStatus != .playing {
                     DispatchQueue.main.async {
                         self.playhead = currentTime * 1_000
-                        self.currentDate = Date.now
                     }
                 }
             })
@@ -116,6 +122,10 @@ public class PlayerObserver: ObservableObject {
                 }
             }
         })
+    }
+    
+    private func setAdItems(_ adItems: [(AVAsset, CMTime)]) async {
+        self.currentAdItems = adItems
     }
     
     private func setInterstitialPlayerStatusObservation(_ interstitialPlayer: AVPlayer) {
