@@ -9,10 +9,11 @@ import AVFoundation
 import Combine
 import os
 
-let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
-let MAX_TOLERANCE_IN_SPEED: Double = 2.5
-let MAX_TOLERANCE_EVENT_END_TIME: Double = 1_000
-let KEEP_PODS_FOR_MS: Double = 1_000 * 60 * 2   // 2 minutes
+private let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
+private let MAX_TOLERANCE_IN_SPEED: Double = 2.5
+private let MAX_TOLERANCE_EVENT_END_TIME: Double = 1_000
+private let KEEP_PODS_FOR_MS: Double = 1_000 * 60 * 2   // 2 minutes
+private let METADATA_UPDATE_INTERVAL: TimeInterval = 2
 
 enum HarmonicAdTrackerError: Error {
     case runtimeError(String)
@@ -20,7 +21,7 @@ enum HarmonicAdTrackerError: Error {
 
 @MainActor
 public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
-    private static let logger = Logger(
+    static let logger = Logger(
         subsystem: Bundle.module.bundleIdentifier!,
         category: String(describing: HarmonicAdTracker.self)
     )
@@ -28,20 +29,57 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     @Published
     public private(set) var adPods: [AdBreak] = []
     
+    @Published
+    public var session = Session()
+    
     private var lastPlayheadTime: Double = 0
     private var lastPlayheadUpdateTime: Double = 0
+    private var lastDataRange: DataRange?
+    
+    private let decoder = JSONDecoder()
+    private var refreshMetadatTimer: AnyCancellable?
     private var timeJumpObservation: AnyCancellable?
     
     public init(adPods: [AdBreak] = [], lastPlayheadTime: Double = 0, lastPlayheadUpdateTime: Double = 0) {
         self.adPods = adPods
         self.lastPlayheadTime = lastPlayheadTime
         self.lastPlayheadUpdateTime = lastPlayheadUpdateTime
-        setTimeJumpObservation()
+        
+        self.setRefreshMetadataTimer()
+        self.setTimeJumpObservation()
     }
     
-    public func updatePods(_ pods: [AdBreak]?) async {
-        if let pods = pods {
-            mergePods(pods)
+    public func stop() async {
+        await resetAdPods()
+        refreshMetadatTimer?.cancel()
+        timeJumpObservation?.cancel()
+    }
+    
+    public func setMediaUrl(_ urlString: String) async {
+        guard !urlString.isEmpty else { return }
+        var manifestUrl, adTrackingMetadataUrl: String
+        do {
+            guard let (_, httpResponse) = try await HarmonicAdTracker.makeRequestTo(urlString) else {
+                return
+            }
+            
+            if let redirectedUrl = httpResponse.url {
+                manifestUrl = redirectedUrl.absoluteString
+                adTrackingMetadataUrl = HarmonicAdTracker.rewriteUrlToMetadataUrl(redirectedUrl.absoluteString)
+            } else {
+                manifestUrl = urlString
+                adTrackingMetadataUrl = HarmonicAdTracker.rewriteUrlToMetadataUrl(urlString)
+            }
+            
+            session.sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
+                                              mediaUrl: urlString,
+                                              manifestUrl: manifestUrl,
+                                              adTrackingMetadataUrl: adTrackingMetadataUrl)
+            
+            _ = await refreshMetadata(urlString: adTrackingMetadataUrl, time: nil)
+        } catch {
+            let errorMessage = "Error loading media with URL: \(urlString); Error: \(error)"
+            Self.logger.error("\(errorMessage, privacy: .public)")
         }
     }
     
@@ -65,6 +103,17 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     
     // MARK: Private
     
+    private func setRefreshMetadataTimer() {
+        refreshMetadatTimer = Timer.publish(every: METADATA_UPDATE_INTERVAL, on: .main, in: .common)
+            .autoconnect()
+            .sink(receiveValue: { [weak self] _ in
+                guard let self = self else { return }
+                Task {
+                    await self.checkNeedUpdate()
+                }
+            })
+    }
+    
     private func setTimeJumpObservation() {
         timeJumpObservation = NotificationCenter.default.publisher(for: AVPlayerItem.timeJumpedNotification)
             .sink(receiveValue: { [weak self] _ in
@@ -78,8 +127,70 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
             })
     }
     
+    private func updatePods(_ pods: [AdBreak]?) async {
+        if let pods = pods {
+            mergePods(pods)
+        }
+    }
+    
     private func resetAdPods() async {
         self.adPods.removeAll()
+    }
+    
+    private func checkNeedUpdate() async {
+        var url = session.sessionInfo.adTrackingMetadataUrl
+        let lastPlayheadTime = await getPlayheadTime()
+        Self.logger.trace("Calling refreshMetadata without start; playhead is \(Date(timeIntervalSince1970: lastPlayheadTime/1_000), privacy: .public)")
+        let result = await refreshMetadata(urlString: url, time: lastPlayheadTime)
+        if let lastDataRange = lastDataRange {
+            if !HarmonicAdTracker.isInRange(time: lastPlayheadTime, range: lastDataRange) && !result {
+                url += "&start=\(Int(lastPlayheadTime))"
+                Self.logger.trace("Calling refreshMetadata with start: \(Date(timeIntervalSince1970: lastPlayheadTime/1_000), privacy: .public) with url: \(url, privacy: .public)")
+                if await !refreshMetadata(urlString: url, time: nil) {
+                    Self.logger.warning("refreshMetadata for url with start: \(url, privacy: .public) returned false.")
+                }
+            }
+        }
+    }
+    
+    private func refreshMetadata(urlString: String, time: Double?) async -> Bool {
+        guard !urlString.isEmpty else { return false }
+        
+        do {
+            guard let (data, _) = try await HarmonicAdTracker.makeRequestTo(urlString) else {
+                return false
+            }
+            
+            decoder.dateDecodingStrategy = .millisecondsSince1970
+            let adBeacon = try decoder.decode(AdBeacon.self, from: data)
+            
+            let adPodIDs = adBeacon.adBreaks.map { $0.id ?? "nil" }
+            var startDate: Date = .distantPast
+            var endDate: Date = .distantPast
+            
+            if let lastDataRange = adBeacon.dataRange {
+                self.lastDataRange = lastDataRange
+                startDate = Date(timeIntervalSince1970: (lastDataRange.start ?? 0) / 1_000)
+                endDate = Date(timeIntervalSince1970: (lastDataRange.end ?? 0) / 1_000)
+                if !HarmonicAdTracker.isInRange(time: time, range: lastDataRange) {
+                    let timeDate = Date(timeIntervalSince1970: (time ?? 0) / 1_000)
+                    Self.logger.warning("Invalid metadata (with ad pods: \(adPodIDs, privacy: .public)):  Time (\(timeDate, privacy: .public)) not in range (start: \(startDate, privacy: .public), end: \(endDate, privacy: .public))")
+                    return false
+                }
+            } else {
+                Self.logger.warning("No DataRange returned in metadata.")
+                return false
+            }
+            
+            Self.logger.trace("Going to update \(adBeacon.adBreaks.count) ad pods: \(adPodIDs, privacy: .public) with DataRange: \(startDate) to \(endDate)")
+            await updatePods(adBeacon.adBreaks)
+            
+            return true
+        } catch {
+            let errorMessage = "Error refreshing metadata with URL: \(urlString); Error: \(error)"
+            Self.logger.error("\(errorMessage, privacy: .public)")
+            return false
+        }
     }
     
     private func sendBeacon(_ trackingEvent: TrackingEvent) async {

@@ -17,9 +17,6 @@ public struct SessionView: View {
     private var adTracker: HarmonicAdTracker
     
     @EnvironmentObject
-    private var session: Session
-    
-    @EnvironmentObject
     private var playerVM: PlayerViewModel
     
     @State
@@ -56,19 +53,19 @@ public struct SessionView: View {
                 Text(String(format: "Last interstitial elapsed: %.2fs", interstitialElapsed))
             }
             ExpandableListView("Session Info", isExpanded: $expandSession) {
-                Toggle("Set Automatically Preserves Time Offset From Live", isOn: $session.automaticallyPreservesTimeOffsetFromLive)
+                Toggle("Set Automatically Preserves Time Offset From Live", isOn: $adTracker.session.automaticallyPreservesTimeOffsetFromLive)
                     .font(.caption2)
                     .padding(.trailing, 10)
                 ScrollView {
                     VStack(alignment: .leading) {
                         ExpandableListView("Media URL", isExpanded: $expandMediaUrl) {
-                            Text(session.sessionInfo.mediaUrl)
+                            Text(adTracker.session.sessionInfo.mediaUrl)
                         }
                         ExpandableListView("Manifest URL", isExpanded: $expandManifestUrl) {
-                            Text(session.sessionInfo.manifestUrl)
+                            Text(adTracker.session.sessionInfo.manifestUrl)
                         }
                         ExpandableListView("Ad tracking metadata URL", isExpanded: $expandAdTrackingMetadataUrl) {
-                            Text(session.sessionInfo.adTrackingMetadataUrl)
+                            Text(adTracker.session.sessionInfo.adTrackingMetadataUrl)
                         }
                     }
                     .font(.caption2)
@@ -112,7 +109,6 @@ extension SessionView {
 struct SessionInfoView_Previews: PreviewProvider {
     static var previews: some View {
         SessionView()
-            .environmentObject(sampleSession)
             .environmentObject(HarmonicAdTracker())
             .environmentObject(PlayerViewModel())
     }

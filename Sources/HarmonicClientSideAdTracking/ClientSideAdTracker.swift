@@ -8,7 +8,8 @@
 import Foundation
 
 public protocol ClientSideAdTracker {
-    func updatePods(_ pods: [AdBreak]?) async
+    func stop() async
+    func setMediaUrl(_ urlString: String) async
     func getPlayheadTime() async -> Double
     func needSendBeacon(time: Double) async
 }

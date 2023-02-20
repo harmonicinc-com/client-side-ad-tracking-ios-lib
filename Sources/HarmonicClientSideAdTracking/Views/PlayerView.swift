@@ -16,9 +16,6 @@ public struct PlayerView: View {
     private var playerObserver = PlayerObserver()
     
     @EnvironmentObject
-    private var session: Session
-    
-    @EnvironmentObject
     private var adTracker: HarmonicAdTracker
     
     @EnvironmentObject
@@ -49,11 +46,11 @@ public struct PlayerView: View {
                     await adTracker.needSendBeacon(time: playhead)
                 }
             }
-            .onReceive(session.$sessionInfo) { info in
-                reload(with: info.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: session.automaticallyPreservesTimeOffsetFromLive)
+            .onReceive(adTracker.session.$sessionInfo) { info in
+                reload(with: info.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: adTracker.session.automaticallyPreservesTimeOffsetFromLive)
             }
-            .onReceive(session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
-                reload(with: session.sessionInfo.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: enabled)
+            .onReceive(adTracker.session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
+                reload(with: adTracker.session.sessionInfo.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: enabled)
             })
             .onAppear {
                 playerObserver.setPlayer(playerVM.player)
@@ -84,7 +81,6 @@ extension PlayerView {
 struct PlayerView_Previews: PreviewProvider {
     static var previews: some View {
         PlayerView()
-            .environmentObject(sampleSession)
             .environmentObject(HarmonicAdTracker())
             .environmentObject(PlayerViewModel())
     }
