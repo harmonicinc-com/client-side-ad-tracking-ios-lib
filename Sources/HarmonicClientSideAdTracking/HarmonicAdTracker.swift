@@ -101,6 +101,31 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         lastPlayheadUpdateTime = now
     }
     
+    // MARK: Internal
+    
+    func playheadIsIncludedInStoredAdPods(playhead: Double? = nil) -> Bool {
+        let playhead = playhead ?? self.lastPlayheadTime
+        for adPod in adPods {
+            if let start = adPod.startTime, let duration = adPod.duration {
+                if start...(start + duration + AD_END_TRACKING_EVENT_TIME_TOLERANCE) ~= playhead {
+                    return true
+                }
+            }
+        }
+        
+        return false
+    }
+    
+    func playheadIsInAd(_ ad: Ad, playhead: Double? = nil) -> Bool {
+        let playhead = playhead ?? self.lastPlayheadTime
+        if let start = ad.startTime, let duration = ad.duration {
+            if start...(start + duration + AD_END_TRACKING_EVENT_TIME_TOLERANCE) ~= playhead {
+                return true
+            }
+        }
+        return false
+    }
+    
     // MARK: Private
     
     private func setRefreshMetadataTimer() {
@@ -325,18 +350,6 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         }
         
         existingAds = existingAds.sorted(by: { ($0.startTime ?? 0) < ($1.startTime ?? 0) })
-    }
-    
-    public func playheadIsIncludedInStoredAdPods(playhead: Double) -> Bool {
-        for adPod in adPods {
-            if let start = adPod.startTime, let duration = adPod.duration {
-                if start...(start + duration + AD_END_TRACKING_EVENT_TIME_TOLERANCE) ~= playhead {
-                    return true
-                }
-            }
-        }
-        
-        return false
     }
     
 }

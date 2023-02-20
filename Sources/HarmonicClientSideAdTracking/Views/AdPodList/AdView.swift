@@ -47,7 +47,8 @@ struct AdView: View {
             if let pod = adPods.first(where: { $0.id == adBreakId }),
                let ad = pod.ads.first(where: { $0.id == ad.id }),
                let startTime = ad.startTime,
-               let duration = ad.duration {
+               let duration = ad.duration,
+               adTracker.playheadIsInAd(ad) {
                 if ad.expanded == nil {
                     Task {
                         expandAd = await adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
