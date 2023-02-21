@@ -66,6 +66,9 @@ public struct PlayerView: View {
 extension PlayerView {
     private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
         if let url = URL(string: urlString) {
+            let interstitialMonitor = AVPlayerInterstitialEventMonitor(primaryPlayer: playerVM.player)
+            interstitialMonitor.interstitialPlayer.pause()
+            
             playerVM.player.pause()
             playerVM.player.replaceCurrentItem(with: nil)
             
