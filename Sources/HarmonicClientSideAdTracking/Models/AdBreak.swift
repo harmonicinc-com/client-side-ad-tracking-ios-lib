@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 public class AdBreak: Decodable, Identifiable, ObservableObject {
     public var id: String?

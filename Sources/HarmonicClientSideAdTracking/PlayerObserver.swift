@@ -34,7 +34,7 @@ public class PlayerObserver: ObservableObject {
     @Published
     public private(set) var interstitialStatus: AVPlayer.TimeControlStatus?
     
-    private var interstitialPlayer: AVQueuePlayer?
+    public private(set) var interstitialPlayer: AVQueuePlayer?
     
     private var currentAdItems: [(AVAsset, CMTime)] = []
     

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 public class Session: ObservableObject {
     @Published

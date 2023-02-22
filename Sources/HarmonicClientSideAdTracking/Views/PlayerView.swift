@@ -39,8 +39,8 @@ public struct PlayerView: View {
                 guard let playhead = playerObserver.playhead else { return }
                 Task {
                     if let status = playerObserver.interstitialStatus,
-                        status != .playing,
-                        adTracker.playheadIsIncludedInStoredAdPods(playhead: playhead) {
+                       status != .playing,
+                       adTracker.playheadIsIncludedInStoredAdPods(playhead: playhead) {
                         return
                     }
                     await adTracker.needSendBeacon(time: playhead)
@@ -65,13 +65,17 @@ public struct PlayerView: View {
 
 extension PlayerView {
     private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
-        if let url = URL(string: urlString) {
-            let interstitialMonitor = AVPlayerInterstitialEventMonitor(primaryPlayer: playerVM.player)
-            interstitialMonitor.interstitialPlayer.pause()
+        guard let url = URL(string: urlString) else { return }
+        
+        let interstitialController = AVPlayerInterstitialEventController(primaryPlayer: playerVM.player)
+        interstitialController.cancelCurrentEvent(withResumptionOffset: .zero)
+        
+        if let originalPrimaryStatus = playerObserver.primaryStatus {
+            if originalPrimaryStatus == .playing {
+                playerVM.player.pause()
+            }
             
-            playerVM.player.pause()
             playerVM.player.replaceCurrentItem(with: nil)
-            
             let playerItem = AVPlayerItem(url: url)
             playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
             playerVM.player.replaceCurrentItem(with: playerItem)

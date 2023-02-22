@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 
 public class TrackingEvent: Decodable, Identifiable, Hashable, ObservableObject {
     public var id: UUID? = UUID()
