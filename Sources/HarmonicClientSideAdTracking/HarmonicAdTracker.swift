@@ -9,7 +9,8 @@ import AVFoundation
 import Combine
 import os
 
-private let AD_START_TOLERANCE_FOR_TIMEJUMP_RESET: Double = 3_000
+private let RESET_AD_PODS_IF_TIMEJUMP_EXCEEDS: TimeInterval = 60
+private let AD_START_TOLERANCE_FOR_TIMEJUMP_RESET: Double = 4_000
 private let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
 private let MAX_TOLERANCE_IN_SPEED: Double = 2.5
 private let MAX_TOLERANCE_EVENT_END_TIME: Double = 1_000
@@ -142,11 +143,17 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     
     private func setTimeJumpObservation() {
         timeJumpObservation = NotificationCenter.default.publisher(for: AVPlayerItem.timeJumpedNotification)
-            .sink(receiveValue: { [weak self] _ in
+            .sink(receiveValue: { [weak self] notification in
                 guard let self = self else { return }
-                if !self.playheadIsIncludedInStoredAdPods(playhead: self.lastPlayheadTime) {
+                guard !self.adPods.isEmpty else { return }
+                guard let item = notification.object as? AVPlayerItem else { return }
+                guard let currentPlayhead = item.currentDate() else { return }
+                
+                let lastPlayhead = Date(timeIntervalSince1970: (self.lastPlayheadTime / 1_000))
+                if !self.playheadIsIncludedInStoredAdPods(playhead: self.lastPlayheadTime),
+                   abs(lastPlayhead.timeIntervalSince(currentPlayhead)) > RESET_AD_PODS_IF_TIMEJUMP_EXCEEDS {
                     let adPodIDs = self.adPods.map { $0.id ?? "nil" }
-                    Self.logger.trace("Detected time jump (playhead: \(Date(timeIntervalSince1970: (self.lastPlayheadTime / 1_000)))), resetting ad pods (\(adPodIDs))")
+                    Self.logger.trace("Detected time jump (current playhead: \(currentPlayhead) (last playhead: \(lastPlayhead)), resetting ad pods (\(adPodIDs))")
                     Task {
                         await self.resetAdPods()
                     }
