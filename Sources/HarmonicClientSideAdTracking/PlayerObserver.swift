@@ -34,6 +34,12 @@ public class PlayerObserver: ObservableObject {
     @Published
     public private(set) var interstitialStatus: AVPlayer.TimeControlStatus?
     
+    @Published
+    public private(set) var interstitialStoppedTime: Double?
+    
+    @Published
+    public private(set) var currentAdDuration: Double?
+    
     public private(set) var interstitialPlayer: AVQueuePlayer?
     
     private var currentAdItems: [(AVAsset, CMTime)] = []
@@ -126,6 +132,9 @@ public class PlayerObserver: ObservableObject {
     
     private func setAdItems(_ adItems: [(AVAsset, CMTime)]) async {
         self.currentAdItems = adItems
+        if !adItems.isEmpty {
+            self.currentAdDuration = adItems.reduce(0) { $0 + $1.1.seconds }
+        }
     }
     
     private func setInterstitialPlayerStatusObservation(_ interstitialPlayer: AVPlayer) {
@@ -133,6 +142,9 @@ public class PlayerObserver: ObservableObject {
             .sink(receiveValue: { newStatus in
                 DispatchQueue.main.async {
                     self.interstitialStatus = newStatus
+                    if newStatus == .paused {
+                        self.interstitialStoppedTime = self.playhead
+                    }
                 }
             })
     }

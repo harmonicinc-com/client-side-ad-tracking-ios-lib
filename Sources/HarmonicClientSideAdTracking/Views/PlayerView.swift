@@ -9,6 +9,7 @@ import SwiftUI
 import AVKit
 
 let BEACON_UPDATE_INTERVAL: TimeInterval = 0.5
+private let INTERSTITIAL_BEACON_SEND_TOLERANCE: Double = 1500
 
 public struct PlayerView: View {
     
@@ -37,12 +38,20 @@ public struct PlayerView: View {
 #endif
             .onReceive(checkNeedSendBeaconTimer) { _ in
                 guard let playhead = playerObserver.playhead else { return }
-                Task {
-                    if let status = playerObserver.interstitialStatus,
-                       status != .playing,
-                       adTracker.playheadIsIncludedInStoredAdPods(playhead: playhead) {
+                if let interstitialStatus = playerObserver.interstitialStatus,
+                   interstitialStatus != .playing {
+                    if playerObserver.interstitialStartDate == nil { return }
+                    
+                    if let interstitialStop = playerObserver.interstitialStoppedTime,
+                       let duration = playerObserver.currentAdDuration,
+                       let interstitialStart = playerObserver.interstitialStartDate {
+                        if abs(interstitialStop - (interstitialStart + duration*1000)) > INTERSTITIAL_BEACON_SEND_TOLERANCE { return }
+                    } else {
                         return
                     }
+                }
+                
+                Task {
                     await adTracker.needSendBeacon(time: playhead)
                 }
             }
