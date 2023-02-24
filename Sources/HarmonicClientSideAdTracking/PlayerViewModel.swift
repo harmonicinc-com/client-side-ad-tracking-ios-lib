@@ -16,6 +16,9 @@ public class PlayerViewModel: ObservableObject {
     @Published
     public private(set) var playerControlIsFocused = false
     
+    @Published
+    public var isShowDebugOverlay = true
+    
     public init() {}
     
     public func setPlayer(_ player: AVPlayer) {
@@ -24,6 +27,10 @@ public class PlayerViewModel: ObservableObject {
     
     public func setPlayerControlIsFocused(_ focused: Bool) {
         self.playerControlIsFocused = focused
+    }
+    
+    public func setIsShowDebugOverlay(_ show: Bool) {
+        self.isShowDebugOverlay = show
     }
 
 }

@@ -29,7 +29,9 @@ public struct PlayerView: View {
     public var body: some View {
         VStack {
             VideoPlayer(player: playerVM.player, videoOverlay: {
-                VideoOverlayView()
+                if playerVM.isShowDebugOverlay {
+                    VideoOverlayView()
+                }
             })
 #if os(iOS)
             .aspectRatio(CGSize(width: 16, height: 9), contentMode: .fit)

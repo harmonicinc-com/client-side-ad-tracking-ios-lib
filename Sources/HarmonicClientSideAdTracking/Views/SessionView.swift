@@ -53,9 +53,6 @@ public struct SessionView: View {
                 Text(String(format: "Last interstitial elapsed: %.2fs", interstitialElapsed))
             }
             ExpandableListView("Session Info", isExpanded: $expandSession) {
-                Toggle("Set Automatically Preserves Time Offset From Live", isOn: $adTracker.session.automaticallyPreservesTimeOffsetFromLive)
-                    .font(.caption2)
-                    .padding(.trailing, 10)
                 ScrollView {
                     VStack(alignment: .leading) {
                         ExpandableListView("Media URL", isExpanded: $expandMediaUrl) {
@@ -68,8 +65,10 @@ public struct SessionView: View {
                             Text(adTracker.session.sessionInfo.adTrackingMetadataUrl)
                         }
                     }
+#if os(tvOS)
+                    .font(.system(size: 20))
+#else
                     .font(.caption2)
-#if os(iOS)
                     .textSelection(.enabled)
 #endif
                 }
