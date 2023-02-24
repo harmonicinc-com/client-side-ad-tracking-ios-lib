@@ -133,7 +133,7 @@ public class PlayerObserver: ObservableObject {
     private func setAdItems(_ adItems: [(AVAsset, CMTime)]) async {
         self.currentAdItems = adItems
         if !adItems.isEmpty {
-            self.currentAdDuration = adItems.reduce(0) { $0 + $1.1.seconds }
+            self.currentAdDuration = (adItems.reduce(0) { $0 + $1.1.seconds }) * 1_000
         }
     }
     

@@ -40,13 +40,11 @@ public struct PlayerView: View {
                 guard let playhead = playerObserver.playhead else { return }
                 if let interstitialStatus = playerObserver.interstitialStatus,
                    interstitialStatus != .playing {
-                    if playerObserver.interstitialStartDate == nil { return }
+                    guard let interstitialStart = playerObserver.interstitialStartDate else { return }
+                    guard let interstitialStop = playerObserver.interstitialStoppedTime else { return }
+                    guard let duration = playerObserver.currentAdDuration else { return }
                     
-                    if let interstitialStop = playerObserver.interstitialStoppedTime,
-                       let duration = playerObserver.currentAdDuration,
-                       let interstitialStart = playerObserver.interstitialStartDate {
-                        if abs(interstitialStop - (interstitialStart + duration*1000)) > INTERSTITIAL_BEACON_SEND_TOLERANCE { return }
-                    } else {
+                    if abs(interstitialStop - (interstitialStart + duration)) > INTERSTITIAL_BEACON_SEND_TOLERANCE {
                         return
                     }
                 }

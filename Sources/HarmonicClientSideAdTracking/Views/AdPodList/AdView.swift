@@ -16,6 +16,9 @@ struct AdView: View {
     @EnvironmentObject
     private var adTracker: HarmonicAdTracker
     
+    @EnvironmentObject
+    private var playerVM: PlayerViewModel
+    
     @State
     private var expandAd = true
     
@@ -55,7 +58,9 @@ struct AdView: View {
                     }
                 }
                 let trackingEvents = ad.trackingEvents.filter({ ($0.reportingState) != .idle })
-                trackingEventType = trackingEvents.last?.event
+                if !playerVM.playerControlIsFocused {
+                    trackingEventType = trackingEvents.last?.event
+                }
             }
         }
         .onChange(of: expandAd) { newValue in
@@ -68,5 +73,6 @@ struct AdView_Previews: PreviewProvider {
     static var previews: some View {
         AdView(ad: sampleAdBeacon?.adBreaks.first?.ads.first ?? Ad())
             .environmentObject(HarmonicAdTracker())
+            .environmentObject(PlayerViewModel())
     }
 }

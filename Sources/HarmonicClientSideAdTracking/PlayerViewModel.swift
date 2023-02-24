@@ -13,10 +13,17 @@ public class PlayerViewModel: ObservableObject {
     @Published
     public private(set) var player = AVPlayer()
     
+    @Published
+    public private(set) var playerControlIsFocused = false
+    
     public init() {}
     
     public func setPlayer(_ player: AVPlayer) {
         self.player = player
+    }
+    
+    public func setPlayerControlIsFocused(_ focused: Bool) {
+        self.playerControlIsFocused = focused
     }
 
 }
