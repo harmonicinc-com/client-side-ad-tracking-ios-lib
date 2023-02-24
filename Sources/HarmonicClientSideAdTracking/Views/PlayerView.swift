@@ -7,11 +7,16 @@
 
 import SwiftUI
 import AVKit
+import os
 
 let BEACON_UPDATE_INTERVAL: TimeInterval = 0.5
 private let INTERSTITIAL_BEACON_SEND_TOLERANCE: Double = 1500
 
 public struct PlayerView: View {
+    private static let logger = Logger(
+        subsystem: Bundle.module.bundleIdentifier!,
+        category: String(describing: PlayerView.self)
+    )
     
     @StateObject
     private var playerObserver = PlayerObserver()
@@ -49,6 +54,7 @@ public struct PlayerView: View {
                        let interstitialStop = playerObserver.interstitialStoppedDate,
                        let duration = playerObserver.currentInterstitialDuration {
                         if abs(interstitialStop - (interstitialStart + duration)) > INTERSTITIAL_BEACON_SEND_TOLERANCE {
+                            Self.logger.info("Not sending beacon because interstitialStop (\(Date(timeIntervalSince1970: interstitialStop / 1_000))) exceeds interstitialStart+duration (\(Date(timeIntervalSince1970: (interstitialStart+duration) / 1_000))) by more than \(INTERSTITIAL_BEACON_SEND_TOLERANCE) ms.")
                             shouldCheckBeacon = false
                         }
                     } else {
