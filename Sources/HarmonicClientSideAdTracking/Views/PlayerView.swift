@@ -40,19 +40,27 @@ public struct PlayerView: View {
 #endif
             .onReceive(checkNeedSendBeaconTimer) { _ in
                 guard let playhead = playerObserver.playhead else { return }
-                if let interstitialStatus = playerObserver.interstitialStatus,
+                
+                var shouldCheckBeacon = true
+                if playerObserver.hasInterstitialEvents,
+                   let interstitialStatus = playerObserver.interstitialStatus,
                    interstitialStatus != .playing {
-                    guard let interstitialStart = playerObserver.interstitialStartDate else { return }
-                    guard let interstitialStop = playerObserver.interstitialStoppedTime else { return }
-                    guard let duration = playerObserver.currentAdDuration else { return }
-                    
-                    if abs(interstitialStop - (interstitialStart + duration)) > INTERSTITIAL_BEACON_SEND_TOLERANCE {
-                        return
+                    if let interstitialStart = playerObserver.interstitialStartDate,
+                       let interstitialStop = playerObserver.interstitialStoppedDate,
+                       let duration = playerObserver.currentInterstitialDuration {
+                        if abs(interstitialStop - (interstitialStart + duration)) > INTERSTITIAL_BEACON_SEND_TOLERANCE {
+                            shouldCheckBeacon = false
+                        }
+                    } else {
+                        shouldCheckBeacon = false
                     }
                 }
                 
                 Task {
-                    await adTracker.needSendBeacon(time: playhead)
+                    if shouldCheckBeacon {
+                        await adTracker.needSendBeacon(time: playhead)
+                    }
+                    await adTracker.setPlayheadTime(playhead)
                 }
             }
             .onReceive(adTracker.session.$sessionInfo) { info in

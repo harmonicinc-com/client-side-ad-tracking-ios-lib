@@ -85,6 +85,10 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         }
     }
     
+    public func setPlayheadTime(_ time: Double) async {
+        self.lastPlayheadTime = time
+    }
+    
     public func getPlayheadTime() async -> Double {
         return lastPlayheadTime
     }
@@ -99,7 +103,6 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         if 0.nextUp...MAX_TOLERANCE_IN_SPEED ~= speed {
             await iterateTrackingEvents(time0: lastPlayheadTime, time1: time)
         }
-        lastPlayheadTime = time
         lastPlayheadUpdateTime = now
     }
     
