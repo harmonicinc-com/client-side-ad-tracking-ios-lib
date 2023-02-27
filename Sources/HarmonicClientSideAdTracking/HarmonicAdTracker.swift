@@ -205,10 +205,12 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
             var startDate: Date = .distantPast
             var endDate: Date = .distantPast
             
-            if let lastDataRange = adBeacon.dataRange {
+            if let lastDataRange = adBeacon.dataRange,
+               let start = lastDataRange.start,
+               let end = lastDataRange.end {
                 self.lastDataRange = lastDataRange
-                startDate = Date(timeIntervalSince1970: (lastDataRange.start ?? 0) / 1_000)
-                endDate = Date(timeIntervalSince1970: (lastDataRange.end ?? 0) / 1_000)
+                startDate = Date(timeIntervalSince1970: start / 1_000)
+                endDate = Date(timeIntervalSince1970: end / 1_000)
                 if !HarmonicAdTracker.isInRange(time: time, range: lastDataRange) {
                     let timeDate = Date(timeIntervalSince1970: (time ?? 0) / 1_000)
                     Self.logger.warning("Invalid metadata (with ad pods: \(adPodIDs, privacy: .public)):  Time (\(timeDate, privacy: .public)) not in range (start: \(startDate, privacy: .public), end: \(endDate, privacy: .public))")
