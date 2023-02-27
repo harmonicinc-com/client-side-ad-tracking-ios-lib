@@ -54,7 +54,6 @@ public struct PlayerView: View {
                        let interstitialStop = playerObserver.interstitialStoppedDate,
                        let duration = playerObserver.currentInterstitialDuration {
                         if abs(interstitialStop - (interstitialStart + duration)) > INTERSTITIAL_BEACON_SEND_TOLERANCE {
-                            Self.logger.info("Not sending beacon because interstitialStop (\(Date(timeIntervalSince1970: interstitialStop / 1_000))) exceeds interstitialStart+duration (\(Date(timeIntervalSince1970: (interstitialStart+duration) / 1_000))) by more than \(INTERSTITIAL_BEACON_SEND_TOLERANCE) ms.")
                             shouldCheckBeacon = false
                         }
                     } else {
