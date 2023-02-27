@@ -85,15 +85,17 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         }
     }
     
-    public func setPlayheadTime(_ time: Double) async {
+    // MARK: Internal
+    
+    func setPlayheadTime(_ time: Double) async {
         self.lastPlayheadTime = time
     }
     
-    public func getPlayheadTime() async -> Double {
+    func getPlayheadTime() async -> Double {
         return lastPlayheadTime
     }
     
-    public func needSendBeacon(time: Double) async {
+    func needSendBeacon(time: Double) async {
         let now = Date().timeIntervalSince1970 * 1_000
         if now == lastPlayheadUpdateTime {
             return
@@ -104,21 +106,6 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
             await iterateTrackingEvents(time0: lastPlayheadTime, time1: time)
         }
         lastPlayheadUpdateTime = now
-    }
-    
-    // MARK: Internal
-    
-    func playheadIsIncludedInStoredAdPods(playhead: Double? = nil) -> Bool {
-        let playhead = playhead ?? self.lastPlayheadTime
-        for adPod in adPods {
-            if let start = adPod.startTime, let duration = adPod.duration {
-                if (start - AD_START_TOLERANCE_FOR_TIMEJUMP_RESET)...(start + duration + AD_END_TRACKING_EVENT_TIME_TOLERANCE) ~= playhead {
-                    return true
-                }
-            }
-        }
-        
-        return false
     }
     
     func playheadIsInAd(_ ad: Ad, playhead: Double? = nil) -> Bool {
@@ -162,6 +149,19 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
                     }
                 }
             })
+    }
+    
+    private func playheadIsIncludedInStoredAdPods(playhead: Double? = nil) -> Bool {
+        let playhead = playhead ?? self.lastPlayheadTime
+        for adPod in adPods {
+            if let start = adPod.startTime, let duration = adPod.duration {
+                if (start - AD_START_TOLERANCE_FOR_TIMEJUMP_RESET)...(start + duration + AD_END_TRACKING_EVENT_TIME_TOLERANCE) ~= playhead {
+                    return true
+                }
+            }
+        }
+        
+        return false
     }
     
     private func updatePods(_ pods: [AdBreak]?) async {

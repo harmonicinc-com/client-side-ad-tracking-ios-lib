@@ -10,7 +10,4 @@ import Foundation
 public protocol ClientSideAdTracker {
     func stop() async
     func setMediaUrl(_ urlString: String) async
-    func setPlayheadTime(_ time: Double) async
-    func getPlayheadTime() async -> Double
-    func needSendBeacon(time: Double) async
 }

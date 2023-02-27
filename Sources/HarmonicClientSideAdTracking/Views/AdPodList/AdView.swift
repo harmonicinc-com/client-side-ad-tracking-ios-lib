@@ -57,8 +57,8 @@ struct AdView: View {
                         expandAd = await adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
                     }
                 }
-                let trackingEvents = ad.trackingEvents.filter({ ($0.reportingState) != .idle })
                 if !playerVM.playerControlIsFocused {
+                    let trackingEvents = ad.trackingEvents.filter({ ($0.reportingState) != .idle })
                     trackingEventType = trackingEvents.last?.event
                 }
             }
