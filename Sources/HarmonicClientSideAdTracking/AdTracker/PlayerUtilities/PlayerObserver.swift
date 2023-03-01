@@ -29,13 +29,16 @@ public class PlayerObserver: ObservableObject {
     public private(set) var interstitialStatus: AVPlayer.TimeControlStatus?
     
     @Published
-    public private(set) var interstitialStartDate: Double?
+    public private(set) var interstitialDate: Double?
     
     @Published
     public private(set) var interstitialStoppedDate: Double?
     
     @Published
-    public private(set) var elapsedTimeInInterstitial: Double?
+    public private(set) var interstitialStartTime: Double?
+    
+    @Published
+    public private(set) var interstitialStopTime: Double?
     
     @Published
     public private(set) var currentInterstitialDuration: Double?
@@ -43,7 +46,7 @@ public class PlayerObserver: ObservableObject {
     @Published
     public private(set) var hasInterstitialEvents: Bool = false
     
-    public private(set) var interstitialPlayer: AVQueuePlayer?
+    private var interstitialPlayer: AVQueuePlayer?
     
     private var currentInterstitialItems: [(AVAsset, CMTime)] = []
     
@@ -169,7 +172,11 @@ public class PlayerObserver: ObservableObject {
                 DispatchQueue.main.async {
                     self.interstitialStatus = newStatus
                     if newStatus == .paused {
-                        self.interstitialStoppedDate = self.playhead
+                        if let interstitialDate = self.interstitialDate, let interstitialStopTime = self.interstitialStopTime {
+                            self.interstitialStoppedDate = interstitialDate + interstitialStopTime * 1_000
+                        } else {
+                            self.interstitialStoppedDate = self.playhead
+                        }
                     }
                 }
             })
@@ -181,9 +188,9 @@ public class PlayerObserver: ObservableObject {
             queue: .global(),
             using: { [weak self] _ in
                 guard let self = self else { return }
-                guard let interstitialStartDate = monitor.currentEvent?.date?.timeIntervalSince1970 else { return }
+                guard let interstitialDate = monitor.currentEvent?.date?.timeIntervalSince1970 else { return }
                 DispatchQueue.main.async {
-                    self.interstitialStartDate = interstitialStartDate * 1_000
+                    self.interstitialDate = interstitialDate * 1_000
                 }
                 
                 guard let interstitialPlayer = self.interstitialPlayer else { return }
@@ -199,16 +206,26 @@ public class PlayerObserver: ObservableObject {
                         return assetWithDuration.offset < currentPlayingIndex ? partialResult + assetWithDuration.element.1 : partialResult
                     }
                 
-                let elapsedTimeInInterstitial = (playedAdsTotalDuration + interstitialPlayer.currentTime()).seconds
-                DispatchQueue.main.async {
-                    self.elapsedTimeInInterstitial = elapsedTimeInInterstitial
-                }
+                let interstitialStopTime = (playedAdsTotalDuration + interstitialPlayer.currentTime()).seconds
+                self.setInterstitalStartAndStopTimes(interstitialStopTime: interstitialStopTime)
                 
-                let interstitialPlayhead = interstitialStartDate + elapsedTimeInInterstitial
+                let interstitialPlayhead = interstitialDate + interstitialStopTime
                 DispatchQueue.main.async {
                     self.playhead = interstitialPlayhead * 1_000
                 }
             })
+    }
+    
+    private func setInterstitalStartAndStopTimes(interstitialStopTime: Double) {
+        DispatchQueue.main.async {
+            if let lastInterstitialStopTime = self.interstitialStopTime,
+               interstitialStopTime < lastInterstitialStopTime {
+                self.interstitialStartTime = interstitialStopTime
+            } else if self.interstitialStopTime == nil {
+                self.interstitialStartTime = interstitialStopTime
+            }
+            self.interstitialStopTime = interstitialStopTime
+        }
     }
     
 }

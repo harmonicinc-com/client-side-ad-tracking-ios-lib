@@ -38,14 +38,16 @@ extension HarmonicAdTracker {
     }
     
     static func isInRange(time: Double?, range: DataRange) -> Bool {
-        if let time = time {
-            if let start = range.start, let end = range.end {
-                return start...(end-EARLY_FETCH_MS) ~= time
-            } else {
-                return false
-            }
-        } else {
-            return true
-        }
+        guard let time = time else { return true }
+        guard let start = range.start, let end = range.end else { return false }
+        return start...(end-EARLY_FETCH_MS) ~= time
+    }
+    
+    static func getFormattedString(from date: Double) -> String {
+        return getFormattedString(from: Date(timeIntervalSince1970: date / 1_000))
+    }
+    
+    static func getFormattedString(from date: Date) -> String {
+        return date.formatted(date: .omitted, time: .standard)
     }
 }

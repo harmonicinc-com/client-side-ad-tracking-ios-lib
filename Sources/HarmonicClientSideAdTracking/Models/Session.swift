@@ -13,7 +13,7 @@ public class Session: ObservableObject {
     public var sessionInfo: SessionInfo
     
     @Published
-    public var automaticallyPreservesTimeOffsetFromLive: Bool = true
+    public var automaticallyPreservesTimeOffsetFromLive: Bool = false
     
     public init(sessionInfo: SessionInfo = SessionInfo()) {
         self.sessionInfo = sessionInfo

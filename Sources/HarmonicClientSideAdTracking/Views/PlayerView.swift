@@ -9,8 +9,8 @@ import SwiftUI
 import AVKit
 import os
 
-let BEACON_UPDATE_INTERVAL: TimeInterval = 0.5
-private let INTERSTITIAL_BEACON_SEND_TOLERANCE: Double = 1500
+private let BEACON_UPDATE_INTERVAL: TimeInterval = 0.5
+private let INTERSTITIAL_BEACON_SEND_TOLERANCE: Double = 1_500
 
 public struct PlayerView: View {
     private static let logger = Logger(
@@ -45,27 +45,12 @@ public struct PlayerView: View {
 #endif
             .onReceive(checkNeedSendBeaconTimer) { _ in
                 guard let playhead = playerObserver.playhead else { return }
-                
-                var shouldCheckBeacon = true
-                if playerObserver.hasInterstitialEvents,
-                   let interstitialStatus = playerObserver.interstitialStatus,
-                   interstitialStatus != .playing {
-                    if let interstitialStart = playerObserver.interstitialStartDate,
-                       let interstitialStop = playerObserver.interstitialStoppedDate,
-                       let duration = playerObserver.currentInterstitialDuration {
-                        if abs(interstitialStop - (interstitialStart + duration)) > INTERSTITIAL_BEACON_SEND_TOLERANCE {
-                            shouldCheckBeacon = false
-                        }
-                    } else {
-                        shouldCheckBeacon = false
-                    }
-                }
-                
+                let shouldCheckBeacon = shouldCheckBeaconForInterstitials(playhead: playhead)
                 Task {
                     if shouldCheckBeacon {
                         await adTracker.needSendBeacon(time: playhead)
                     }
-                    await adTracker.setPlayheadTime(playhead)
+                    await adTracker.setPlayheadTime(playhead, shouldCheckBeacon: shouldCheckBeacon)
                 }
             }
             .onReceive(adTracker.session.$sessionInfo) { info in
@@ -104,6 +89,35 @@ extension PlayerView {
             
             playerVM.player.play()
         }
+    }
+    
+    private func shouldCheckBeaconForInterstitials(playhead: Double) -> Bool {
+        var shouldCheckBeacon = true
+        
+        if playerObserver.hasInterstitialEvents,
+           let interstitialStatus = playerObserver.interstitialStatus,
+           interstitialStatus != .playing,
+           adTracker.playheadIsIncludedInStoredAdPods() {
+            // There are interstitial events and the playhead is inside the range of the adPods, but the interstitialPlayer is not playing
+            shouldCheckBeacon = false
+            
+            if let interstitialDate = playerObserver.interstitialDate,
+               let interstitialStop = playerObserver.interstitialStoppedDate,
+               let duration = playerObserver.currentInterstitialDuration {
+                // The interstitialPlayer status may change to .paused (and the interstitalStoppedDate set) before the "complete" signal is sent.
+                // So we should still check beacon if the stop date is not too far from the calculated one (interstitialDate + duration)
+                // and it has just stopped playing the interstitial.
+                if abs(interstitialStop - (interstitialDate + duration)) <= INTERSTITIAL_BEACON_SEND_TOLERANCE &&
+                    abs(interstitialStop - playhead) <= INTERSTITIAL_BEACON_SEND_TOLERANCE {
+                    shouldCheckBeacon = true
+                } else {
+                    shouldCheckBeacon = false
+                }
+                
+            }
+        }
+        
+        return shouldCheckBeacon
     }
 }
 

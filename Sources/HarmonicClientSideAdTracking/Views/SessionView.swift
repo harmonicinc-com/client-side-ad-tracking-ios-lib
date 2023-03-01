@@ -46,11 +46,14 @@ public struct SessionView: View {
                 Text(String(format: "Time to next ad break: %.2fs", timeToNextAdBreak))
                     .bold()
             }
-            if let interstitialStart = getInterstitialStartDate(playerObserver.interstitialStartDate) {
-                Text("Last interstitial start: \(dateFormatter.string(from: interstitialStart))")
+            if let interstitialDate = getInterstitialDate(playerObserver.interstitialDate) {
+                Text("Last interstitial date: \(dateFormatter.string(from: interstitialDate))")
             }
-            if let interstitialElapsed = playerObserver.elapsedTimeInInterstitial {
-                Text(String(format: "Last interstitial elapsed: %.2fs", interstitialElapsed))
+            if let interstitialStartTime = playerObserver.interstitialStartTime {
+                Text(String(format: "Last interstitial started: %.2fs", interstitialStartTime))
+            }
+            if let interstitialStop = playerObserver.interstitialStopTime {
+                Text(String(format: "Last interstitial stopped: %.2fs", interstitialStop))
             }
             ExpandableListView("Session Info", isExpanded: $expandSession) {
                 ScrollView {
@@ -96,9 +99,9 @@ extension SessionView {
         }
     }
     
-    private func getInterstitialStartDate(_ start: Double?) -> Date? {
-        if let start = start {
-            return Date(timeIntervalSince1970: start / 1_000)
+    private func getInterstitialDate(_ date: Double?) -> Date? {
+        if let date = date {
+            return Date(timeIntervalSince1970: date / 1_000)
         } else {
             return nil
         }
