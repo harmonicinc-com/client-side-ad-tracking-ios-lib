@@ -93,29 +93,37 @@ extension PlayerView {
     
     private func shouldCheckBeaconForInterstitials(playhead: Double) -> Bool {
         var shouldCheckBeacon = true
+        var isTrueReason = 0
+        var isFalseReason = 0
         
         if playerObserver.hasInterstitialEvents,
            let interstitialStatus = playerObserver.interstitialStatus,
-           interstitialStatus != .playing,
-           adTracker.playheadIsIncludedInStoredAdPods() {
-            // There are interstitial events and the playhead is inside the range of the adPods, but the interstitialPlayer is not playing
+           interstitialStatus != .playing {
+            // There are interstitial events but the interstitialPlayer is not playing
             shouldCheckBeacon = false
             
-            if let interstitialDate = playerObserver.interstitialDate,
-               let interstitialStop = playerObserver.interstitialStoppedDate,
-               let duration = playerObserver.currentInterstitialDuration {
-                // The interstitialPlayer status may change to .paused (and the interstitalStoppedDate set) before the "complete" signal is sent.
-                // So we should still check beacon if the stop date is not too far from the calculated one (interstitialDate + duration)
-                // and it has just stopped playing the interstitial.
-                if abs(interstitialStop - (interstitialDate + duration)) <= INTERSTITIAL_BEACON_SEND_TOLERANCE &&
-                    abs(interstitialStop - playhead) <= INTERSTITIAL_BEACON_SEND_TOLERANCE {
-                    shouldCheckBeacon = true
-                } else {
-                    shouldCheckBeacon = false
+            if adTracker.playheadIsIncludedInStoredAdPods() {
+                if let interstitialDate = playerObserver.interstitialDate,
+                   let interstitialStop = playerObserver.interstitialStoppedDate,
+                   let duration = playerObserver.currentInterstitialDuration {
+                    // The interstitialPlayer status may change to .paused (and the interstitalStoppedDate set) before the "complete" signal is sent.
+                    // So we should still check beacon if the stop date is not too far from the calculated one (interstitialDate + duration)
+                    // and it has just stopped playing the interstitial.
+                    if abs(interstitialStop - (interstitialDate + duration)) <= INTERSTITIAL_BEACON_SEND_TOLERANCE &&
+                        abs(interstitialStop - playhead) <= INTERSTITIAL_BEACON_SEND_TOLERANCE {
+                        shouldCheckBeacon = true
+                        isTrueReason = 1
+                    } else {
+                        shouldCheckBeacon = false
+                        isFalseReason = 1
+                        Self.logger.trace("shouldCheckBeacon is false; interstitial date: \(HarmonicAdTracker.getFormattedString(from: interstitialDate)); stopped: \(HarmonicAdTracker.getFormattedString(from: interstitialStop)); duration: \(duration / 1_000)")
+                    }
                 }
-                
             }
+            
         }
+        
+//        Self.logger.trace("Should check beacon with playhead: \(HarmonicAdTracker.getFormattedString(from: playhead)) is \(shouldCheckBeacon) with reason (\(shouldCheckBeacon ? isTrueReason : isFalseReason)); hasEvents: \(playerObserver.hasInterstitialEvents); status: \(playerObserver.interstitialStatus?.rawValue ?? -1); playheadIsInStoredAdPods: \(adTracker.playheadIsIncludedInStoredAdPods())")
         
         return shouldCheckBeacon
     }

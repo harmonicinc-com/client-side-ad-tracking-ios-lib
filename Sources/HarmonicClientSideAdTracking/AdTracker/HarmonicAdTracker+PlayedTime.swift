@@ -8,8 +8,8 @@
 import Foundation
 
 private let CHECK_PLAYHEAD_IS_IN_DATARANGE_INTERVAL: TimeInterval = 1
-private let PLAYHEAD_TIME_END_TOLERANCE: Double = 1_000
-private let UPDATE_STORED_TIME_TOLERANCE: Double = 500
+private let PLAYHEAD_TIME_END_TOLERANCE: Double = CHECK_PLAYHEAD_IS_IN_DATARANGE_INTERVAL * 1_000
+private let UPDATE_STORED_TIME_TOLERANCE: Double = PLAYHEAD_TIME_END_TOLERANCE / 2
 
 extension HarmonicAdTracker {
     func setCheckPlayheadIsInDataRangeTimer() {
@@ -28,6 +28,7 @@ extension HarmonicAdTracker {
     
     func checkNeedSendBeaconsForPlayedTime() async {
         let timeRangesToCheck = getIntersectionsWithLastDataRange()
+        Self.logger.trace("timeRangesToCheck for played ranges: \(timeRangesToCheck)")
         await withTaskGroup(of: Void.self, body: { group in
             for pod in adPods {
                 for ad in pod.ads {
@@ -39,6 +40,7 @@ extension HarmonicAdTracker {
                         if reportingState == .idle && eventIsInRanges(timeRangesToCheck, trackingEvent: trackingEvent) {
                             group.addTask {
                                 await self.sendBeacon(trackingEvent)
+                                Self.logger.trace("Sending beacon for missed event: \(trackingEvent.signalingUrls)")
                             }
                         }
                     }
@@ -60,7 +62,6 @@ extension HarmonicAdTracker {
         if !canUpdateExistingDataRanges {
             let newPlayedTimeOutsideDataRange = DataRange(start: time, end: time + PLAYHEAD_TIME_END_TOLERANCE)
             playedTimeOutsideDataRange.append(newPlayedTimeOutsideDataRange)
-            Self.logger.trace("Added new time range played outside lastDataRange: \(self.playedTimeOutsideDataRange)")
         }
     }
     
@@ -97,9 +98,9 @@ extension HarmonicAdTracker {
               let duration = trackingEvent.duration else {
             return false
         }
-        let trackingEventRange = DataRange(start: startTime, end: startTime + max(duration, MAX_TOLERANCE_EVENT_END_TIME))
+        let trackingEventRange = DataRange(start: startTime, end: startTime + max(duration + MAX_TOLERANCE_EVENT_END_TIME, MAX_TOLERANCE_EVENT_END_TIME))
         for range in ranges {
-            if trackingEventRange.isWithin(range) {
+            if trackingEventRange.overlaps(range) {
                 return true
             }
         }
