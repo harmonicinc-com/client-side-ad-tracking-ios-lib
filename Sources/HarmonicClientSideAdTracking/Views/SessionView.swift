@@ -35,7 +35,7 @@ public struct SessionView: View {
     
     public init() {
         self.dateFormatter = DateFormatter()
-        self.dateFormatter.dateFormat = "dd/MM/yyyy HH:mm:ss"
+        self.dateFormatter.dateFormat = "dd/MM/yyyy HH:mm:ss.SSS"
     }
     
     public var body: some View {

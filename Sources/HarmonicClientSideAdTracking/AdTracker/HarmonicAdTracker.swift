@@ -24,6 +24,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         subsystem: Bundle.module.bundleIdentifier!,
         category: String(describing: HarmonicAdTracker.self)
     )
+    static let dateFormatter = DateFormatter()
     
     @Published
     public internal(set) var adPods: [AdBreak] = []

@@ -24,7 +24,7 @@ public struct DetailedDebugInfoView: View {
     
     public init() {
         self.dateFormatter = DateFormatter()
-        self.dateFormatter.dateFormat = "HH:mm:ss"
+        self.dateFormatter.dateFormat = "HH:mm:ss.SSS"
     }
     
     public var body: some View {

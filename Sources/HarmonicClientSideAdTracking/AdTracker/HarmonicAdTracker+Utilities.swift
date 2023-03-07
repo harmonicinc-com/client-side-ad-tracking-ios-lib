@@ -48,6 +48,7 @@ extension HarmonicAdTracker {
     }
     
     static func getFormattedString(from date: Date) -> String {
-        return date.formatted(date: .omitted, time: .standard)
+        Self.dateFormatter.dateFormat = "HH:mm:ss.SSS"
+        return dateFormatter.string(from: date)
     }
 }

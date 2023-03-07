@@ -11,6 +11,8 @@ public class DataRange: Decodable, Hashable {
     public var start: Double?
     public var end: Double?
     
+    private static let dateFormatter = DateFormatter()
+    
     public init(start: Double?, end: Double?) {
         self.start = start
         self.end = end
@@ -56,7 +58,8 @@ extension DataRange: CustomStringConvertible {
         guard let start = start, let end = end else {
             return "DataRange(nil)"
         }
-        return "DataRange(start: \(Date(timeIntervalSince1970: start / 1_000).formatted(date: .omitted, time: .standard)); "
-        + "end: \(Date(timeIntervalSince1970: end / 1_000).formatted(date: .omitted, time: .standard)))"
+        Self.dateFormatter.dateFormat = "HH:mm:ss.SSS"
+        return "DataRange(start: \(Self.dateFormatter.string(from: Date(timeIntervalSince1970: start / 1_000))); "
+        + "end: \(Self.dateFormatter.string(from: Date(timeIntervalSince1970: end / 1_000))))"
     }
 }
