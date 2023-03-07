@@ -50,10 +50,12 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
         self.adPods = adPods
         self.lastPlayheadTime = lastPlayheadTime
         self.lastPlayheadUpdateTime = lastPlayheadUpdateTime
-        
-        self.setRefreshMetadataTimer()
-        self.setCheckPlayheadIsInDataRangeTimer()
-        self.setTimeJumpObservation()
+    }
+    
+    public func start() async {
+        setRefreshMetadataTimer()
+        setCheckPlayheadIsInDataRangeTimer()
+        setTimeJumpObservation()
     }
     
     public func stop() async {
