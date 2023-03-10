@@ -62,10 +62,6 @@ public struct PlayerView: View {
             .onAppear {
                 playerObserver.setPlayer(playerVM.player)
             }
-            .onDisappear {
-                playerVM.player.pause()
-                playerVM.player.replaceCurrentItem(with: nil)
-            }
         }
     }
 }
