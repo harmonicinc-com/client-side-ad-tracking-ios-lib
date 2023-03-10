@@ -54,7 +54,7 @@ public struct PlayerView: View {
                 }
             }
             .onReceive(adTracker.session.$sessionInfo) { info in
-                reload(with: info.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: adTracker.session.automaticallyPreservesTimeOffsetFromLive)
+                load(with: info.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: adTracker.session.automaticallyPreservesTimeOffsetFromLive)
             }
             .onReceive(adTracker.session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
                 reload(with: adTracker.session.sessionInfo.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: enabled)
@@ -67,9 +67,12 @@ public struct PlayerView: View {
 }
 
 extension PlayerView {
-    private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
+    private func load(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
         guard playerVM.player.timeControlStatus != .playing else { return }
-        
+        reload(with: urlString, isAutomaticallyPreservesTimeOffsetFromLive: isAutomaticallyPreservesTimeOffsetFromLive)
+    }
+    
+    private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
         guard let url = URL(string: urlString) else { return }
         
         let interstitialController = AVPlayerInterstitialEventController(primaryPlayer: playerVM.player)
