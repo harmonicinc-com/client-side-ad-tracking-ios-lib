@@ -68,6 +68,8 @@ public struct PlayerView: View {
 
 extension PlayerView {
     private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
+        guard playerVM.player.timeControlStatus != .playing else { return }
+        
         guard let url = URL(string: urlString) else { return }
         
         let interstitialController = AVPlayerInterstitialEventController(primaryPlayer: playerVM.player)
