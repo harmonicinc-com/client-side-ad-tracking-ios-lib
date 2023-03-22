@@ -10,8 +10,8 @@ import AVFoundation
 
 public struct SessionView: View {
     
-    @StateObject
-    private var playerObserver = PlayerObserver()
+    @EnvironmentObject
+    private var playerObserver: PlayerObserver
     
     @EnvironmentObject
     private var adTracker: HarmonicAdTracker
@@ -43,17 +43,17 @@ public struct SessionView: View {
             Text("Playhead: \(dateFormatter.string(from: getPlayheadDate(playerObserver.playhead)))")
                 .bold()
             if let timeToNextAdBreak = getTimeToNextBreak(playhead: playerObserver.playhead) {
-                Text(String(format: "Time to next ad break: %.2fs", timeToNextAdBreak))
+                Text(String(format: "Time to next ad break: %.3fs", timeToNextAdBreak))
                     .bold()
             }
             if let interstitialDate = getInterstitialDate(playerObserver.interstitialDate) {
                 Text("Last interstitial date: \(dateFormatter.string(from: interstitialDate))")
             }
             if let interstitialStartTime = playerObserver.interstitialStartTime {
-                Text(String(format: "Last interstitial started: %.2fs", interstitialStartTime))
+                Text(String(format: "Last interstitial started: %.3fs", interstitialStartTime))
             }
             if let interstitialStop = playerObserver.interstitialStopTime {
-                Text(String(format: "Last interstitial stopped: %.2fs", interstitialStop))
+                Text(String(format: "Last interstitial stopped: %.3fs", interstitialStop))
             }
             ExpandableListView("Session Info", isExpanded: $expandSession) {
                 ScrollView {
@@ -75,9 +75,6 @@ public struct SessionView: View {
                     .textSelection(.enabled)
 #endif
                 }
-            }
-            .onAppear {
-                self.playerObserver.setPlayer(playerVM.player)
             }
         }
         .font(.caption)

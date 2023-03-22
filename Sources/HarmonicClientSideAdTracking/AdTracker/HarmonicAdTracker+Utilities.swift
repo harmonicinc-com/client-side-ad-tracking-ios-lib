@@ -24,7 +24,7 @@ extension HarmonicAdTracker {
             return nil
         }
         if !(200...299 ~= httpResponse.statusCode) {
-            let errorMessage = "Invalid response status: \(httpResponse.statusCode) for URL: \(urlString)"
+            let errorMessage = "Invalid response status: \(httpResponse.statusCode) for URL: \(urlString); The response is: \(String(data: data, encoding: .utf8) ?? "(nil)")"
             Self.logger.error("\(errorMessage, privacy: .public)")
             return nil
         }

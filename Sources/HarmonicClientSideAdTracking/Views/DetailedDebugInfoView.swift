@@ -8,8 +8,8 @@
 import SwiftUI
 
 public struct DetailedDebugInfoView: View {
-    @StateObject
-    private var playerObserver = PlayerObserver()
+    @EnvironmentObject
+    private var playerObserver: PlayerObserver
     
     @EnvironmentObject
     private var adTracker: HarmonicAdTracker
@@ -53,9 +53,6 @@ public struct DetailedDebugInfoView: View {
             .font(.caption2)
         }
         .font(.caption)
-        .onAppear {
-            self.playerObserver.setPlayer(playerVM.player)
-        }
     }
 }
 

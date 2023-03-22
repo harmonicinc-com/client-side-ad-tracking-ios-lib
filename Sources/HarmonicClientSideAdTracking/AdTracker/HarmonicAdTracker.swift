@@ -38,12 +38,15 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     @Published
     public var playedTimeOutsideDataRange: [DataRange] = []
     
+    var playerObserver: PlayerObserver?
+    
     var lastPlayheadTime: Double = 0
     var lastPlayheadUpdateTime: Double = 0
     var shouldCheckBeacon = true
     
     let decoder = JSONDecoder()
     var timeJumpObservation: AnyCancellable?
+    var checkNeedSendBeaconTimer: AnyCancellable?
     var refreshMetadatTimer: AnyCancellable?
     var checkPlayheadIsInDataRangeTimer: AnyCancellable?
     
@@ -55,6 +58,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     
     public func start() async {
         setRefreshMetadataTimer()
+        setCheckNeedSendBeaconTimer()
         setCheckPlayheadIsInDataRangeTimer()
         setTimeJumpObservation()
     }
@@ -62,6 +66,7 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
     public func stop() async {
         await resetAdPods()
         refreshMetadatTimer?.cancel()
+        checkNeedSendBeaconTimer?.cancel()
         checkPlayheadIsInDataRangeTimer?.cancel()
         timeJumpObservation?.cancel()
     }
@@ -92,6 +97,10 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
             let errorMessage = "Error loading media with URL: \(urlString); Error: \(error)"
             Self.logger.error("\(errorMessage, privacy: .public)")
         }
+    }
+    
+    public func setPlayerObserver(_ playerObserver: PlayerObserver) {
+        self.playerObserver = playerObserver
     }
     
     // MARK: Internal

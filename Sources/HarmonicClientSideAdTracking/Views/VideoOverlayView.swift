@@ -11,8 +11,8 @@ struct VideoOverlayView: View {
     @EnvironmentObject
     private var playerVM: PlayerViewModel
     
-    @StateObject
-    private var playerObserver = PlayerObserver()
+    @EnvironmentObject
+    private var playerObserver: PlayerObserver
     
     @State
     private var currentTime = Date()
@@ -43,9 +43,6 @@ struct VideoOverlayView: View {
                 Spacer()
             }
             Spacer()
-        }
-        .onAppear {
-            playerObserver.setPlayer(playerVM.player)
         }
     }
 }
