@@ -51,6 +51,15 @@ public struct PlayerView: View {
 extension PlayerView {
     private func load(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
         guard playerVM.player.timeControlStatus != .playing else { return }
+        
+        let interstitialController = AVPlayerInterstitialEventMonitor(primaryPlayer: playerVM.player)
+        let interstitialPlayer = interstitialController.interstitialPlayer
+        let interstitialStatus = interstitialPlayer.timeControlStatus
+        if interstitialStatus == .playing {
+            interstitialPlayer.play()
+            return
+        }
+        
         reload(with: urlString, isAutomaticallyPreservesTimeOffsetFromLive: isAutomaticallyPreservesTimeOffsetFromLive)
     }
     

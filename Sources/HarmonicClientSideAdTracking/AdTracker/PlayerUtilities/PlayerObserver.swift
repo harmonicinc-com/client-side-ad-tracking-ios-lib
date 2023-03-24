@@ -74,6 +74,7 @@ public class PlayerObserver: ObservableObject {
         setPrimaryPlayerStatusObservation(player)
         
         let interstitialMonitor = AVPlayerInterstitialEventMonitor(primaryPlayer: player)
+        hasInterstitialEvents = !interstitialMonitor.events.isEmpty
         
         interstitialPlayer = interstitialMonitor.interstitialPlayer
         
