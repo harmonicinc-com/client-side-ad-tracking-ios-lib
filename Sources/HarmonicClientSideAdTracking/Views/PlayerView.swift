@@ -51,7 +51,7 @@ public struct PlayerView: View {
 extension PlayerView {
     private func load(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
         guard playerVM.player.timeControlStatus != .playing else { return }
-        
+
         let interstitialController = AVPlayerInterstitialEventMonitor(primaryPlayer: playerVM.player)
         let interstitialPlayer = interstitialController.interstitialPlayer
         let interstitialStatus = interstitialPlayer.timeControlStatus
@@ -74,10 +74,12 @@ extension PlayerView {
                 playerVM.player.pause()
             }
             
-            playerVM.player.replaceCurrentItem(with: nil)
             let playerItem = AVPlayerItem(url: url)
             playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
-            playerVM.player.replaceCurrentItem(with: playerItem)
+            
+            // HMS-10699: Set a new player instead of using replaceCurrentItem(with:)
+            playerVM.setPlayer(AVPlayer(playerItem: playerItem))
+            playerObserver.setPlayer(playerVM.player)
             
             playerVM.player.play()
         }
