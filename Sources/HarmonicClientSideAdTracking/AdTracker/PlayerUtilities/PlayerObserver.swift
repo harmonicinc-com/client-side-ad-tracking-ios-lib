@@ -67,6 +67,8 @@ public class PlayerObserver: ObservableObject {
     public init() {}
     
     public func setPlayer(_ player: AVPlayer) {
+        resetObservations()
+        
         setCurrentDateTimer()
         
         setPrimaryPlayheadObservation(player)
@@ -85,6 +87,16 @@ public class PlayerObserver: ObservableObject {
         addObserverForCurrentInterstitialEvent(interstitialMonitor)
         
         setInterstitialPlayheadObservation(interstitialMonitor)
+    }
+    
+    private func resetObservations() {
+        currentDateTimer?.cancel()
+        primaryPlayheadObservation = nil
+        primaryPlayerStatusObservation?.cancel()
+        interstitialPlayheadObservation  = nil
+        interstitialEventsObservation?.cancel()
+        currentInterstitialEventObservation?.cancel()
+        interstitialPlayerStatusObservation?.cancel()
     }
     
     private func setCurrentDateTimer() {
