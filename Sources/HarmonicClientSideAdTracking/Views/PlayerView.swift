@@ -69,20 +69,16 @@ extension PlayerView {
         let interstitialController = AVPlayerInterstitialEventController(primaryPlayer: playerVM.player)
         interstitialController.cancelCurrentEvent(withResumptionOffset: .zero)
         
-        if let originalPrimaryStatus = playerObserver.primaryStatus {
-            if originalPrimaryStatus == .playing {
-                playerVM.player.pause()
-            }
-            
-            let playerItem = AVPlayerItem(url: url)
-            playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
-            
-            // HMS-10699: Set a new player instead of using replaceCurrentItem(with:)
-            playerVM.setPlayer(AVPlayer(playerItem: playerItem))
-            playerObserver.setPlayer(playerVM.player)
-            
-            playerVM.player.play()
-        }
+        playerVM.player.pause()
+        
+        let playerItem = AVPlayerItem(url: url)
+        playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
+        
+        // HMS-10699: Set a new player instead of using replaceCurrentItem(with:)
+        playerVM.setPlayer(AVPlayer(playerItem: playerItem))
+        playerObserver.setPlayer(playerVM.player)
+        
+        playerVM.player.play()
     }
 }
 
