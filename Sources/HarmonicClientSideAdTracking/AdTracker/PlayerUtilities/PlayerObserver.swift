@@ -84,6 +84,8 @@ public class PlayerObserver: ObservableObject {
         
         addObserverForInterstitialEvents(interstitialMonitor)
         
+        checkForInterstitialItems(with: interstitialMonitor)
+        
         addObserverForCurrentInterstitialEvent(interstitialMonitor)
         
         setInterstitialPlayheadObservation(interstitialMonitor)
@@ -146,28 +148,32 @@ public class PlayerObserver: ObservableObject {
         })
     }
     
+    private func checkForInterstitialItems(with monitor: AVPlayerInterstitialEventMonitor) {
+        let currentEvent = monitor.currentEvent
+        Task {
+            let currentEventItems = (currentEvent?.templateItems ?? []).map({ item in
+                return (item.asset, item.asset.duration)
+            })
+            await setInterstitialItems(currentEventItems)
+            if currentInterstitialItems.isEmpty {
+                let interstitialPlayerItems = (interstitialPlayer?.items() ?? []).map({ item in
+                    return (item.asset, item.asset.duration)
+                })
+                if !interstitialPlayerItems.isEmpty {
+                    Self.logger.warning("No ads found in current event of the interstitial monitor, using the interstital player's queued ads instead.")
+                    await setInterstitialItems(interstitialPlayerItems)
+                }
+            }
+        }
+    }
+    
     private func addObserverForCurrentInterstitialEvent(_ monitor: AVPlayerInterstitialEventMonitor) {
         currentInterstitialEventObservation = NotificationCenter.default.publisher(
             for: AVPlayerInterstitialEventMonitor.currentEventDidChangeNotification,
             object: monitor)
         .sink(receiveValue: { [weak self] _ in
             guard let self = self else { return }
-            let currentEvent = monitor.currentEvent
-            Task {
-                let currentEventItems = (currentEvent?.templateItems ?? []).map({ item in
-                    return (item.asset, item.asset.duration)
-                })
-                await self.setInterstitialItems(currentEventItems)
-                if self.currentInterstitialItems.isEmpty {
-                    let interstitialPlayerItems = (self.interstitialPlayer?.items() ?? []).map({ item in
-                        return (item.asset, item.asset.duration)
-                    })
-                    if !interstitialPlayerItems.isEmpty {
-                        Self.logger.warning("No ads found in current event of the interstitial monitor, using the interstital player's queued ads instead.")
-                        await self.setInterstitialItems(interstitialPlayerItems)
-                    }
-                }
-            }
+            self.checkForInterstitialItems(with: monitor)
         })
     }
     
