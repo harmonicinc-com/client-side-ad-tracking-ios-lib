@@ -208,13 +208,17 @@ public class PlayerObserver: ObservableObject {
     }
     
     private func setInterstitalStartAndStopTimes(interstitialStopTime: Double) {
-        DispatchQueue.main.async {
-            if let lastInterstitialStopTime = self.interstitialStopTime,
-               interstitialStopTime < lastInterstitialStopTime {
-                self.interstitialStartTime = interstitialStopTime
-            } else if self.interstitialStopTime == nil {
+        if let lastInterstitialStopTime = self.interstitialStopTime,
+           interstitialStopTime < lastInterstitialStopTime {
+            DispatchQueue.main.async {
                 self.interstitialStartTime = interstitialStopTime
             }
+        } else if self.interstitialStopTime == nil {
+            DispatchQueue.main.async {
+                self.interstitialStartTime = interstitialStopTime
+            }
+        }
+        DispatchQueue.main.async {
             self.interstitialStopTime = interstitialStopTime
         }
     }
