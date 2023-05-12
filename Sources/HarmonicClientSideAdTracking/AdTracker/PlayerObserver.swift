@@ -16,78 +16,50 @@ public class PlayerObserver: ObservableObject {
         category: String(describing: PlayerObserver.self)
     )
     
-    @Published
-    public private(set) var currentDate: Date?
+    @Published public private(set) var currentDate: Date?
     
-    @Published
-    public private(set) var playhead: Double?
+    @Published public private(set) var playhead: Double?
+    @Published public private(set) var primaryStatus: AVPlayer.TimeControlStatus?
     
-    @Published
-    public private(set) var primaryStatus: AVPlayer.TimeControlStatus?
-    
-    @Published
-    public private(set) var interstitialStatus: AVPlayer.TimeControlStatus?
-    
-    @Published
-    public private(set) var interstitialDate: Double?
-    
-    @Published
-    public private(set) var interstitialStoppedDate: Double?
-    
-    @Published
-    public private(set) var interstitialStartTime: Double?
-    
-    @Published
-    public private(set) var interstitialStopTime: Double?
-    
-    @Published
-    public private(set) var currentInterstitialDuration: Double?
-    
-    @Published
-    public private(set) var hasInterstitialEvents: Bool = false
+    @Published public private(set) var hasInterstitialEvents: Bool = false
+    @Published public private(set) var interstitialStatus: AVPlayer.TimeControlStatus?
+    @Published public private(set) var interstitialDate: Double?
+    @Published public private(set) var interstitialStoppedDate: Double?
+    @Published public private(set) var interstitialStartTime: Double?
+    @Published public private(set) var interstitialStopTime: Double?
+    @Published public private(set) var currentInterstitialDuration: Double?
     
     private var interstitialPlayer: AVQueuePlayer?
-    
     private var currentInterstitialItems: [(AVAsset, CMTime)] = []
     
     private var currentDateTimer: AnyCancellable?
     
     private var primaryPlayheadObservation: Any?
-    
     private var primaryPlayerStatusObservation: AnyCancellable?
     
     private var interstitialPlayheadObservation: Any?
-    
     private var interstitialEventsObservation: AnyCancellable?
-    
     private var currentInterstitialEventObservation: AnyCancellable?
-    
     private var interstitialPlayerStatusObservation: AnyCancellable?
     
-    public init() {}
+    init() {}
     
-    public func setPlayer(_ player: AVPlayer) {
+    func setPlayer(_ player: AVPlayer) {
         resetObservations()
         
         setCurrentDateTimer()
         
         setPrimaryPlayheadObservation(player)
-        
         setPrimaryPlayerStatusObservation(player)
         
         let interstitialMonitor = AVPlayerInterstitialEventMonitor(primaryPlayer: player)
         hasInterstitialEvents = !interstitialMonitor.events.isEmpty
-        
         interstitialPlayer = interstitialMonitor.interstitialPlayer
         
         setInterstitialPlayerStatusObservation(interstitialMonitor.interstitialPlayer)
-        
         addObserverForInterstitialEvents(interstitialMonitor)
-        
         checkForInterstitialItems(with: interstitialMonitor)
-        
         addObserverForCurrentInterstitialEvent(interstitialMonitor)
-        
         setInterstitialPlayheadObservation(interstitialMonitor)
     }
     

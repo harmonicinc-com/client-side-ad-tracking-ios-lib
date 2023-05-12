@@ -8,22 +8,19 @@
 import SwiftUI
 
 public struct ToggleView: View {
-    @EnvironmentObject
-    private var adTracker: HarmonicAdTracker
+    @ObservedObject private var session: AdBeaconingSession
+
+    @State private var expand = false
     
-    @EnvironmentObject
-    private var playerVM: PlayerViewModel
-    
-    @State
-    private var expand = false
-    
-    public init() {}
+    public init(session: AdBeaconingSession) {
+        self.session = session
+    }
     
     public var body: some View {
         ExpandableListView("Settings", isExpanded: $expand) {
             VStack {
-                Toggle("Debug Overlay", isOn: $playerVM.isShowDebugOverlay)
-                Toggle("Set Automatically Preserves Time Offset From Live", isOn: $adTracker.session.automaticallyPreservesTimeOffsetFromLive)
+                Toggle("Debug Overlay", isOn: $session.isShowDebugOverlay)
+                Toggle("Set Automatically Preserves Time Offset From Live", isOn: $session.automaticallyPreservesTimeOffsetFromLive)
             }
             .padding(.trailing, 10)
         }
@@ -33,8 +30,6 @@ public struct ToggleView: View {
 
 struct SwiftUIView_Previews: PreviewProvider {
     static var previews: some View {
-        ToggleView()
-            .environmentObject(HarmonicAdTracker())
-            .environmentObject(PlayerViewModel())
+        ToggleView(session: AdBeaconingSession())
     }
 }

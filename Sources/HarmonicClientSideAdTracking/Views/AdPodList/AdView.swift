@@ -7,25 +7,21 @@
 
 import SwiftUI
 
+private let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
+
 struct AdView: View {
-    @ObservedObject
-    var ad: Ad
+    @ObservedObject private var ad: Ad
+    @ObservedObject private var session: AdBeaconingSession
     
+    @State private var expandAd = true
     private var adBreakId: String?
     
-    @EnvironmentObject
-    private var adTracker: HarmonicAdTracker
+#if os(tvOS)
+    @FocusState private var trackingEventType: EventType?
+#endif
     
-    @EnvironmentObject
-    private var playerVM: PlayerViewModel
-    
-    @State
-    private var expandAd = true
-    
-    @FocusState
-    private var trackingEventType: EventType?
-    
-    public init(ad: Ad, adBreakId: String? = nil) {
+    public init(session: AdBeaconingSession, ad: Ad, adBreakId: String? = nil) {
+        self.session = session
         self.ad = ad
         self.adBreakId = adBreakId
     }
@@ -46,21 +42,21 @@ struct AdView: View {
 #endif
             }
         })
-        .onReceive(adTracker.$adPods) { adPods in
+        .onReceive(session.$adPods) { adPods in
             if let pod = adPods.first(where: { $0.id == adBreakId }),
                let ad = pod.ads.first(where: { $0.id == ad.id }),
                let startTime = ad.startTime,
                let duration = ad.duration,
-               adTracker.playheadIsInAd(ad) {
+               playheadIsIn(ad) {
                 if ad.expanded == nil {
-                    Task {
-                        expandAd = await adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
-                    }
+                    expandAd = session.latestPlayhead <= startTime + duration + KEEP_PAST_AD_MS
                 }
-                if !playerVM.playerControlIsFocused {
+#if os(tvOS)
+                if !session.playerControlIsFocused {
                     let trackingEvents = ad.trackingEvents.filter({ ($0.reportingState) != .idle })
                     trackingEventType = trackingEvents.last?.event
                 }
+#endif
             }
         }
         .onChange(of: expandAd) { newValue in
@@ -69,10 +65,20 @@ struct AdView: View {
     }
 }
 
+extension AdView {
+    private func playheadIsIn(_ ad: Ad) -> Bool {
+        if let start = ad.startTime, let duration = ad.duration {
+            let end = start + duration
+            if start...(end + AD_END_TRACKING_EVENT_TIME_TOLERANCE) ~= session.latestPlayhead {
+                return true
+            }
+        }
+        return false
+    }
+}
+
 struct AdView_Previews: PreviewProvider {
     static var previews: some View {
-        AdView(ad: sampleAdBeacon?.adBreaks.first?.ads.first ?? Ad())
-            .environmentObject(HarmonicAdTracker())
-            .environmentObject(PlayerViewModel())
+        AdView(session: AdBeaconingSession(), ad: sampleAdBeacon?.adBreaks.first?.ads.first ?? Ad())
     }
 }

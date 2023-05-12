@@ -15,22 +15,17 @@ public struct PlayerView: View {
         category: String(describing: PlayerView.self)
     )
     
-    @EnvironmentObject
-    private var playerObserver: PlayerObserver
+    @ObservedObject private var session: AdBeaconingSession
     
-    @EnvironmentObject
-    private var adTracker: HarmonicAdTracker
-    
-    @EnvironmentObject
-    private var playerVM: PlayerViewModel
-    
-    public init() {}
+    public init(session: AdBeaconingSession) {
+        self.session = session
+    }
         
     public var body: some View {
         VStack {
-            VideoPlayer(player: playerVM.player, videoOverlay: {
-                if playerVM.isShowDebugOverlay {
-                    VideoOverlayView()
+            VideoPlayer(player: session.player, videoOverlay: {
+                if session.isShowDebugOverlay {
+                    VideoOverlayView(playerObserver: session.playerObserver)
                 }
             })
 #if os(iOS)
@@ -38,11 +33,11 @@ public struct PlayerView: View {
 #else
             .frame(height: 360)
 #endif
-            .onReceive(adTracker.session.$sessionInfo) { info in
-                load(with: info.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: adTracker.session.automaticallyPreservesTimeOffsetFromLive)
+            .onReceive(session.$sessionInfo) { info in
+                load(with: info.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: session.automaticallyPreservesTimeOffsetFromLive)
             }
-            .onReceive(adTracker.session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
-                reload(with: adTracker.session.sessionInfo.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: enabled)
+            .onReceive(session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
+                reload(with: session.sessionInfo.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: enabled)
             })
         }
     }
@@ -50,9 +45,9 @@ public struct PlayerView: View {
 
 extension PlayerView {
     private func load(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
-        guard playerVM.player.timeControlStatus != .playing else { return }
+        guard session.player.timeControlStatus != .playing else { return }
 
-        let interstitialController = AVPlayerInterstitialEventMonitor(primaryPlayer: playerVM.player)
+        let interstitialController = AVPlayerInterstitialEventMonitor(primaryPlayer: session.player)
         let interstitialPlayer = interstitialController.interstitialPlayer
         let interstitialStatus = interstitialPlayer.timeControlStatus
         if interstitialStatus == .playing {
@@ -66,26 +61,24 @@ extension PlayerView {
     private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
         guard let url = URL(string: urlString) else { return }
         
-        let interstitialController = AVPlayerInterstitialEventController(primaryPlayer: playerVM.player)
+        let interstitialController = AVPlayerInterstitialEventController(primaryPlayer: session.player)
         interstitialController.cancelCurrentEvent(withResumptionOffset: .zero)
         
-        playerVM.player.pause()
+        session.player.pause()
         
         let playerItem = AVPlayerItem(url: url)
         playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
         
         // HMS-10699: Set a new player instead of using replaceCurrentItem(with:)
-        playerVM.setPlayer(AVPlayer(playerItem: playerItem))
-        playerObserver.setPlayer(playerVM.player)
+        session.player = AVPlayer(playerItem: playerItem)
+        session.playerObserver.setPlayer(session.player)
         
-        playerVM.player.play()
+        session.player.play()
     }
 }
 
 struct PlayerView_Previews: PreviewProvider {
     static var previews: some View {
-        PlayerView()
-            .environmentObject(HarmonicAdTracker())
-            .environmentObject(PlayerViewModel())
+        PlayerView(session: AdBeaconingSession())
     }
 }

@@ -9,144 +9,91 @@ import AVFoundation
 import Combine
 import os
 
-let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
-let MAX_TOLERANCE_EVENT_END_TIME: Double = 1_000
-let RESET_AD_PODS_IF_TIMEJUMP_EXCEEDS: TimeInterval = 60
-let AD_START_TOLERANCE_FOR_TIMEJUMP_RESET: Double = 4_000
+private let METADATA_UPDATE_INTERVAL: TimeInterval = 4
 
-enum HarmonicAdTrackerError: Error {
-    case runtimeError(String)
-}
+private let RESET_AD_PODS_IF_TIMEJUMP_EXCEEDS: TimeInterval = 60
+private let AD_START_TOLERANCE_FOR_TIMEJUMP_RESET: Double = 4_000
+private let AD_END_TOLERANCE_FOR_TIMEJUMP_RESET: Double = 500
 
 @MainActor
-public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
-    static let logger = Logger(
+public class HarmonicAdTracker {
+    private static let logger = Logger(
         subsystem: Bundle.module.bundleIdentifier!,
         category: String(describing: HarmonicAdTracker.self)
     )
-    static let dateFormatter = DateFormatter()
     
-    @Published
-    public internal(set) var adPods: [AdBreak] = []
+    private let session: AdBeaconingSession
+    private let beaconSender: BeaconSender
     
-    @Published
-    public var session = Session()
+    private var refreshMetadataTimer: AnyCancellable?
+    private var timeJumpObservation: AnyCancellable?
     
-    @Published
-    public var lastDataRange: DataRange?
-    
-    @Published
-    public var playedTimeOutsideDataRange: [DataRange] = []
-    
-    var playerObserver: PlayerObserver?
-    
-    var lastPlayheadTime: Double = 0
-    var lastPlayheadUpdateTime: Double = 0
-    var shouldCheckBeacon = true
-    
-    let decoder = JSONDecoder()
-    var timeJumpObservation: AnyCancellable?
-    var checkNeedSendBeaconTimer: AnyCancellable?
-    var refreshMetadatTimer: AnyCancellable?
-    var checkPlayheadIsInDataRangeTimer: AnyCancellable?
-    
-    public init(adPods: [AdBreak] = [], lastPlayheadTime: Double = 0, lastPlayheadUpdateTime: Double = 0) {
-        self.adPods = adPods
-        self.lastPlayheadTime = lastPlayheadTime
-        self.lastPlayheadUpdateTime = lastPlayheadUpdateTime
+    public init(session: AdBeaconingSession) {
+        self.session = session
+        self.beaconSender = BeaconSender(session: session)
     }
     
-    public func start() async {
+    public func start() {
         setRefreshMetadataTimer()
-        setCheckNeedSendBeaconTimer()
-        setCheckPlayheadIsInDataRangeTimer()
         setTimeJumpObservation()
+        beaconSender.start()
     }
     
-    public func stop() async {
-        await resetAdPods()
-        refreshMetadatTimer?.cancel()
-        checkNeedSendBeaconTimer?.cancel()
-        checkPlayheadIsInDataRangeTimer?.cancel()
+    public func stop() {
+        resetAdPods()
+        refreshMetadataTimer?.cancel()
         timeJumpObservation?.cancel()
+        beaconSender.stop()
     }
-    
-    public func setMediaUrl(_ urlString: String) async {
-        guard !urlString.isEmpty else { return }
-        var manifestUrl, adTrackingMetadataUrl: String
-        do {
-            guard let (_, httpResponse) = try await HarmonicAdTracker.makeRequestTo(urlString) else {
-                return
-            }
-            
-            if let redirectedUrl = httpResponse.url {
-                manifestUrl = redirectedUrl.absoluteString
-                adTrackingMetadataUrl = HarmonicAdTracker.rewriteUrlToMetadataUrl(redirectedUrl.absoluteString)
-            } else {
-                manifestUrl = urlString
-                adTrackingMetadataUrl = HarmonicAdTracker.rewriteUrlToMetadataUrl(urlString)
-            }
-            
-            session.sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
-                                              mediaUrl: urlString,
-                                              manifestUrl: manifestUrl,
-                                              adTrackingMetadataUrl: adTrackingMetadataUrl)
-            
-            _ = await refreshMetadata(urlString: adTrackingMetadataUrl, time: nil)
-        } catch {
-            let errorMessage = "Error loading media with URL: \(urlString); Error: \(error)"
-            Self.logger.error("\(errorMessage, privacy: .public)")
-        }
-    }
-    
-    public func setPlayerObserver(_ playerObserver: PlayerObserver) {
-        self.playerObserver = playerObserver
-    }
-    
-    // MARK: Internal
-    
-    func setPlayheadTime(_ time: Double, shouldCheckBeacon: Bool) async {
-        self.lastPlayheadTime = time
-        self.shouldCheckBeacon = shouldCheckBeacon
-    }
-    
-    func getPlayheadTime() async -> Double {
-        return lastPlayheadTime
-    }
-    
-    func updatePods(_ pods: [AdBreak]?) async {
-        if let pods = pods {
-            mergePods(pods)
-        }
-    }
-    
-    func resetAdPods() async {
-        self.adPods.removeAll()
-    }
-    
-    func playheadIsIncludedInStoredAdPods(playhead: Double? = nil) -> Bool {
-        let playhead = playhead ?? self.lastPlayheadTime
-        for adPod in adPods {
-            if let start = adPod.startTime, let duration = adPod.duration {
-                let startWithTolerance = start - AD_START_TOLERANCE_FOR_TIMEJUMP_RESET
-                let endWithTolerance = start + duration + AD_END_TRACKING_EVENT_TIME_TOLERANCE
-                if startWithTolerance...endWithTolerance ~= playhead {
-                    return true
-                }
-            }
+
+    private func tryRefreshMetadata() async throws {
+        guard let playhead = session.playerObserver.playhead else {
+            throw HarmonicAdTrackerError.metadataError("Playhead is nil.")
         }
         
-        return false
+        var metadataUrl = session.sessionInfo.adTrackingMetadataUrl
+        Self.logger.trace("Try calling AdMetadataHelper.requestAdMetadata (latest playhead is \(Utility.getFormattedString(from: playhead), privacy: .public))")
+        do {
+            let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl, playhead: playhead)
+            await updateLatestInfo(using: adBeacon)
+        } catch {
+            metadataUrl += "&start=\(Int(playhead))"
+            Self.logger.trace("Last call failed with error: \(error); try calling AdMetadataHelper.requestAdMetadata with start param: \(Utility.getFormattedString(from: playhead), privacy: .public) (the new url is: \(metadataUrl, privacy: .public))")
+            let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl, playhead: nil)
+            await updateLatestInfo(using: adBeacon)
+        }
     }
     
-    func playheadIsInAd(_ ad: Ad, playhead: Double? = nil) -> Bool {
-        let playhead = playhead ?? self.lastPlayheadTime
-        if let start = ad.startTime, let duration = ad.duration {
-            if start...(start + duration + AD_END_TRACKING_EVENT_TIME_TOLERANCE) ~= playhead {
-                return true
-            }
+    private func updateLatestInfo(using adBeacon: AdBeacon) async {
+        session.latestDataRange = adBeacon.dataRange
+        updatePods(adBeacon.adBreaks)
+        await beaconSender.checkNeedSendBeaconsForPlayedRange()
+    }
+
+    private func updatePods(_ newPods: [AdBreak]?) {
+        if let newPods = newPods,
+           let playhead = session.playerObserver.playhead {
+            session.adPods = AdMetadataHelper.mergePods(session.adPods, with: newPods, playhead: playhead)
         }
-        return false
+    }
+    
+    private func resetAdPods() {
+        session.adPods.removeAll()
+    }
+    
+    private func setRefreshMetadataTimer() {
+        refreshMetadataTimer = Timer.publish(every: METADATA_UPDATE_INTERVAL, on: .main, in: .common)
+            .autoconnect()
+            .sink(receiveValue: { [weak self] _ in
+                guard let self = self else { return }
+                Task {
+                    do {
+                        try await self.tryRefreshMetadata()
+                    } catch {
+                        Self.logger.warning("tryRefreshMetadata failed: \(error)")
+                    }
+                }
+            })
     }
     
     private func setTimeJumpObservation() {
@@ -154,18 +101,25 @@ public class HarmonicAdTracker: ClientSideAdTracker, ObservableObject {
             .publisher(for: AVPlayerItem.timeJumpedNotification)
             .sink(receiveValue: { [weak self] notification in
                 guard let self = self else { return }
-                guard !self.adPods.isEmpty else { return }
+                guard !self.session.adPods.isEmpty else { return }
                 guard let item = notification.object as? AVPlayerItem else { return }
                 guard let currentPlayhead = item.currentDate() else { return }
-                
-                let lastPlayhead = Date(timeIntervalSince1970: (self.lastPlayheadTime / 1_000))
-                if !self.playheadIsIncludedInStoredAdPods(playhead: self.lastPlayheadTime),
+
+                let lastPlayhead = Date(timeIntervalSince1970: (self.session.latestPlayhead / 1_000))
+                if !Utility.playheadIsIncludedIn(self.session.adPods,
+                                                 for: self.session.latestPlayhead,
+                                                 startTolerance: AD_START_TOLERANCE_FOR_TIMEJUMP_RESET,
+                                                 endTolerance: AD_END_TOLERANCE_FOR_TIMEJUMP_RESET),
                    abs(lastPlayhead.timeIntervalSince(currentPlayhead)) > RESET_AD_PODS_IF_TIMEJUMP_EXCEEDS {
-                    let adPodIDs = self.adPods.map { $0.id ?? "nil" }
-                    Self.logger.trace("Detected time jump (current playhead: \(HarmonicAdTracker.getFormattedString(from: currentPlayhead)) (last playhead: \(HarmonicAdTracker.getFormattedString(from: lastPlayhead))), resetting ad pods (\(adPodIDs))")
+                    let adPodIDs = self.session.adPods.map { $0.id ?? "nil" }
+                    Self.logger.trace("Detected time jump (current playhead: \(Utility.getFormattedString(from: currentPlayhead)) (last playhead: \(Utility.getFormattedString(from: lastPlayhead))), resetting ad pods (\(adPodIDs))")
                     Task {
-                        await self.resetAdPods()
-                        await self.checkNeedUpdate()
+                        self.resetAdPods()
+                        do {
+                            try await self.tryRefreshMetadata()
+                        } catch {
+                            Self.logger.warning("tryRefreshMetadata failed: \(error)")
+                        }
                     }
                 }
             })
