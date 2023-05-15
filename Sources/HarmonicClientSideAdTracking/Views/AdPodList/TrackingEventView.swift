@@ -8,10 +8,13 @@
 import SwiftUI
 
 struct TrackingEventView: View {
-    @ObservedObject
-    private var trackingEvent: TrackingEvent
+    @ObservedObject private var trackingEvent: TrackingEvent
     
-    private let dateFormatter: DateFormatter
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy HH:mm:ss"
+        return formatter
+    }()
     
     private var dateString: String {
         return dateFormatter.string(from: Date(timeIntervalSince1970: (trackingEvent.startTime ?? 0) / 1_000))
@@ -19,8 +22,6 @@ struct TrackingEventView: View {
     
     init(trackingEvent: TrackingEvent) {
         self.trackingEvent = trackingEvent
-        self.dateFormatter = DateFormatter()
-        self.dateFormatter.dateFormat = "dd/MM/yyyy HH:mm:ss"
     }
     
     var body: some View {

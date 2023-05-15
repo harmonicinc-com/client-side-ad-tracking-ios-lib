@@ -8,39 +8,34 @@
 import SwiftUI
 
 public struct DetailedDebugInfoView: View {
-    @EnvironmentObject
-    private var playerObserver: PlayerObserver
+    @ObservedObject private var session: AdBeaconingSession
     
-    @EnvironmentObject
-    private var adTracker: HarmonicAdTracker
+    @State private var expandDebugInfo = false
     
-    @EnvironmentObject
-    private var playerVM: PlayerViewModel
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss.SSS"
+        return formatter
+    }()
     
-    @State
-    private var expandDebugInfo = false
-    
-    private let dateFormatter: DateFormatter
-    
-    public init() {
-        self.dateFormatter = DateFormatter()
-        self.dateFormatter.dateFormat = "HH:mm:ss.SSS"
+    public init(session: AdBeaconingSession) {
+        self.session = session
     }
     
     public var body: some View {
         ExpandableListView("Detailed debug info", isExpanded: $expandDebugInfo) {
             VStack(alignment: .leading) {
-                if let lastDataRange = getDataRangeDates(adTracker.lastDataRange) {
+                if let lastDataRange = getDataRangeDates(session.latestDataRange) {
                     Text("Data range available: \(dateFormatter.string(from: lastDataRange.0)) to \(dateFormatter.string(from: lastDataRange.1))")
                         .lineLimit(0)
                 } else {
                     Text("No data range available in ad tracking metadata.")
                 }
-                if !adTracker.playedTimeOutsideDataRange.isEmpty {
+                if !session.playedTimeOutsideDataRange.isEmpty {
                     Text("Time ranges played outside of available data range:")
                         .bold()
                     ScrollView {
-                        ForEach(adTracker.playedTimeOutsideDataRange, id: \.start) { range in
+                        ForEach(session.playedTimeOutsideDataRange, id: \.start) { range in
                             if let rangeDates = getDataRangeDates(range) {
                                 Text("\(dateFormatter.string(from: rangeDates.0)) to \(dateFormatter.string(from: rangeDates.1))")
                                     .padding(.leading)
@@ -70,8 +65,6 @@ extension DetailedDebugInfoView {
 
 struct DetailedDebugInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        DetailedDebugInfoView()
-            .environmentObject(HarmonicAdTracker())
-            .environmentObject(PlayerViewModel())
+        DetailedDebugInfoView(session: AdBeaconingSession())
     }
 }

@@ -10,29 +10,23 @@ import SwiftUI
 let KEEP_PAST_AD_MS: Double = 2_000
 
 struct AdBreakView: View {
-    @ObservedObject
-    var adBreak: AdBreak
+    @ObservedObject var adBreak: AdBreak
+    @ObservedObject var session: AdBeaconingSession
     
-    @EnvironmentObject
-    private var adTracker: HarmonicAdTracker
-    
-    @State
-    private var expandAdBreak = true
+    @State private var expandAdBreak = true
     
     var body: some View {
         ExpandableListView("Ad Break: \(adBreak.id ?? "nil")", isExpanded: $expandAdBreak, {
             ForEach(adBreak.ads) { ad in
-                AdView(ad: ad, adBreakId: adBreak.id)
+                AdView(session: session, ad: ad, adBreakId: adBreak.id)
             }
         })
-        .onReceive(adTracker.$adPods) { adPods in
+        .onReceive(session.$adPods) { adPods in
             if let pod = adPods.first(where: { $0.id == adBreak.id }),
                let startTime = pod.startTime,
                let duration = pod.duration {
                 if adBreak.expanded == nil {
-                    Task {
-                        expandAdBreak = await adTracker.getPlayheadTime() <= startTime + duration + KEEP_PAST_AD_MS
-                    }
+                    expandAdBreak = session.latestPlayhead <= startTime + duration + KEEP_PAST_AD_MS
                 }
             }
         }
@@ -44,7 +38,6 @@ struct AdBreakView: View {
 
 struct AdBreakView_Previews: PreviewProvider {
     static var previews: some View {
-        AdBreakView(adBreak: sampleAdBeacon?.adBreaks.first ?? AdBreak())
-            .environmentObject(HarmonicAdTracker())
+        AdBreakView(adBreak: sampleAdBeacon?.adBreaks.first ?? AdBreak(), session: AdBeaconingSession())
     }
 }

@@ -8,16 +8,13 @@
 import SwiftUI
 
 struct VideoOverlayView: View {
-    @EnvironmentObject
-    private var playerVM: PlayerViewModel
+    @ObservedObject private var playerObserver: PlayerObserver
     
-    @EnvironmentObject
-    private var playerObserver: PlayerObserver
-    
-    @State
-    private var currentTime = Date()
-    
-    private let dateFormatter: DateFormatter
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy HH:mm:ss"
+        return formatter
+    }()
     
     private var textToDisplay: String {
         var text = "Current time: \(dateFormatter.string(from: playerObserver.currentDate ?? Date()))"
@@ -26,20 +23,19 @@ struct VideoOverlayView: View {
         }
         return text
     }
-        
-    init() {
-        self.dateFormatter = DateFormatter()
-        self.dateFormatter.dateFormat = "dd/MM/yyyy HH:mm:ss"
+    
+    init(playerObserver: PlayerObserver) {
+        self.playerObserver = playerObserver
     }
     
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
                 Text(textToDisplay)
-                .padding(5)
-                .background(Color.black.opacity(0.5))
-                .foregroundColor(.white)
-                .font(.caption)
+                    .padding(5)
+                    .background(Color.black.opacity(0.5))
+                    .foregroundColor(.white)
+                    .font(.caption)
                 Spacer()
             }
             Spacer()
@@ -49,7 +45,6 @@ struct VideoOverlayView: View {
 
 struct VideoOverlayView_Previews: PreviewProvider {
     static var previews: some View {
-        VideoOverlayView()
-            .environmentObject(PlayerViewModel())
+        VideoOverlayView(playerObserver: PlayerObserver())
     }
 }

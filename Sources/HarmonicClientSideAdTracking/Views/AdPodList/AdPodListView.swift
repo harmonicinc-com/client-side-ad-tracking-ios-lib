@@ -8,19 +8,19 @@
 import SwiftUI
 
 public struct AdPodListView: View {
-    @EnvironmentObject
-    private var adTracker: HarmonicAdTracker
+    @ObservedObject private var session: AdBeaconingSession
     
-    @State
-    private var expandAdPods = true
+    @State private var expandAdPods = true
     
-    public init() {}
+    public init(session: AdBeaconingSession) {
+        self.session = session
+    }
     
     public var body: some View {
         ScrollView {
             ExpandableListView("Tracking Events", isExpanded: $expandAdPods, {
-                ForEach(adTracker.adPods) { pod in
-                    AdBreakView(adBreak: pod)
+                ForEach(session.adPods) { pod in
+                    AdBreakView(adBreak: pod, session: session)
                 }
             })
             .font(.caption2)
@@ -30,7 +30,6 @@ public struct AdPodListView: View {
 
 struct AdPodListView_Previews: PreviewProvider {
     static var previews: some View {
-        AdPodListView()
-            .environmentObject(HarmonicAdTracker(adPods: sampleAdBeacon?.adBreaks ?? []))
+        AdPodListView(session: AdBeaconingSession())
     }
 }

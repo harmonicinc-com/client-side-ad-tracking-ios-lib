@@ -16,78 +16,54 @@ public class PlayerObserver: ObservableObject {
         category: String(describing: PlayerObserver.self)
     )
     
-    @Published
-    public private(set) var currentDate: Date?
+    var session: AdBeaconingSession?
     
-    @Published
-    public private(set) var playhead: Double?
+    @Published public private(set) var currentDate: Date?
     
-    @Published
-    public private(set) var primaryStatus: AVPlayer.TimeControlStatus?
+    @Published public private(set) var playhead: Double?
+    @Published public private(set) var primaryStatus: AVPlayer.TimeControlStatus?
     
-    @Published
-    public private(set) var interstitialStatus: AVPlayer.TimeControlStatus?
-    
-    @Published
-    public private(set) var interstitialDate: Double?
-    
-    @Published
-    public private(set) var interstitialStoppedDate: Double?
-    
-    @Published
-    public private(set) var interstitialStartTime: Double?
-    
-    @Published
-    public private(set) var interstitialStopTime: Double?
-    
-    @Published
-    public private(set) var currentInterstitialDuration: Double?
-    
-    @Published
-    public private(set) var hasInterstitialEvents: Bool = false
+    @Published public private(set) var hasInterstitialEvents: Bool = false
+    @Published public private(set) var interstitialStatus: AVPlayer.TimeControlStatus?
+    @Published public private(set) var interstitialDate: Double?
+    @Published public private(set) var interstitialStoppedDate: Double?
+    @Published public private(set) var interstitialStartTime: Double?
+    @Published public private(set) var interstitialStopTime: Double?
+    @Published public private(set) var currentInterstitialDuration: Double?
     
     private var interstitialPlayer: AVQueuePlayer?
-    
     private var currentInterstitialItems: [(AVAsset, CMTime)] = []
     
     private var currentDateTimer: AnyCancellable?
     
     private var primaryPlayheadObservation: Any?
-    
     private var primaryPlayerStatusObservation: AnyCancellable?
     
     private var interstitialPlayheadObservation: Any?
-    
     private var interstitialEventsObservation: AnyCancellable?
-    
     private var currentInterstitialEventObservation: AnyCancellable?
-    
     private var interstitialPlayerStatusObservation: AnyCancellable?
     
-    public init() {}
+    init() {}
     
-    public func setPlayer(_ player: AVPlayer) {
+    func setSession(_ session: AdBeaconingSession) {
+        let player = session.player
+        
         resetObservations()
         
         setCurrentDateTimer()
         
         setPrimaryPlayheadObservation(player)
-        
         setPrimaryPlayerStatusObservation(player)
         
         let interstitialMonitor = AVPlayerInterstitialEventMonitor(primaryPlayer: player)
         hasInterstitialEvents = !interstitialMonitor.events.isEmpty
-        
         interstitialPlayer = interstitialMonitor.interstitialPlayer
         
         setInterstitialPlayerStatusObservation(interstitialMonitor.interstitialPlayer)
-        
         addObserverForInterstitialEvents(interstitialMonitor)
-        
         checkForInterstitialItems(with: interstitialMonitor)
-        
         addObserverForCurrentInterstitialEvent(interstitialMonitor)
-        
         setInterstitialPlayheadObservation(interstitialMonitor)
     }
     
@@ -160,7 +136,8 @@ public class PlayerObserver: ObservableObject {
                     return (item.asset, item.asset.duration)
                 })
                 if !interstitialPlayerItems.isEmpty {
-                    Self.logger.warning("No ads found in current event of the interstitial monitor, using the interstital player's queued ads instead.")
+                    Utility.log("No ads found in current event of the interstitial monitor, using the interstital player's queued ads instead.",
+                                to: session, level: .error, with: Self.logger)
                     await setInterstitialItems(interstitialPlayerItems)
                 }
             }
@@ -216,7 +193,8 @@ public class PlayerObserver: ObservableObject {
                 
                 guard interstitialPlayer.timeControlStatus == .playing else { return }
                 guard let currentPlayingIndex = self.currentInterstitialItems.firstIndex(where: { $0.0 == interstitialPlayer.currentItem?.asset }) else {
-                    Self.logger.warning("Cannot find current interstitial item in list.")
+                    Utility.log("Cannot find current interstitial item in list.",
+                                to: session, level: .warning, with: Self.logger)
                     return
                 }
                 
@@ -236,13 +214,17 @@ public class PlayerObserver: ObservableObject {
     }
     
     private func setInterstitalStartAndStopTimes(interstitialStopTime: Double) {
-        DispatchQueue.main.async {
-            if let lastInterstitialStopTime = self.interstitialStopTime,
-               interstitialStopTime < lastInterstitialStopTime {
-                self.interstitialStartTime = interstitialStopTime
-            } else if self.interstitialStopTime == nil {
+        if let lastInterstitialStopTime = self.interstitialStopTime,
+           interstitialStopTime < lastInterstitialStopTime {
+            DispatchQueue.main.async {
                 self.interstitialStartTime = interstitialStopTime
             }
+        } else if self.interstitialStopTime == nil {
+            DispatchQueue.main.async {
+                self.interstitialStartTime = interstitialStopTime
+            }
+        }
+        DispatchQueue.main.async {
             self.interstitialStopTime = interstitialStopTime
         }
     }

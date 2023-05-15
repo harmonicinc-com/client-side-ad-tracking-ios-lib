@@ -10,32 +10,23 @@ import AVFoundation
 
 public struct SessionView: View {
     
-    @EnvironmentObject
-    private var playerObserver: PlayerObserver
+    @ObservedObject private var session: AdBeaconingSession
+    @ObservedObject private var playerObserver: PlayerObserver
     
-    @EnvironmentObject
-    private var adTracker: HarmonicAdTracker
+    @State private var expandSession = false
+    @State private var expandMediaUrl = true
+    @State private var expandManifestUrl = true
+    @State private var expandAdTrackingMetadataUrl = true
     
-    @EnvironmentObject
-    private var playerVM: PlayerViewModel
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy HH:mm:ss.SSS"
+        return formatter
+    }()
     
-    @State
-    private var expandSession = false
-    
-    @State
-    private var expandMediaUrl = true
-    
-    @State
-    private var expandManifestUrl = true
-    
-    @State
-    private var expandAdTrackingMetadataUrl = true
-    
-    private let dateFormatter: DateFormatter
-    
-    public init() {
-        self.dateFormatter = DateFormatter()
-        self.dateFormatter.dateFormat = "dd/MM/yyyy HH:mm:ss.SSS"
+    public init(session: AdBeaconingSession, playerObserver: PlayerObserver) {
+        self.session = session
+        self.playerObserver = playerObserver
     }
     
     public var body: some View {
@@ -59,13 +50,13 @@ public struct SessionView: View {
                 ScrollView {
                     VStack(alignment: .leading) {
                         ExpandableListView("Media URL", isExpanded: $expandMediaUrl) {
-                            Text(adTracker.session.sessionInfo.mediaUrl)
+                            Text(session.sessionInfo.mediaUrl)
                         }
                         ExpandableListView("Manifest URL", isExpanded: $expandManifestUrl) {
-                            Text(adTracker.session.sessionInfo.manifestUrl)
+                            Text(session.sessionInfo.manifestUrl)
                         }
                         ExpandableListView("Ad tracking metadata URL", isExpanded: $expandAdTrackingMetadataUrl) {
-                            Text(adTracker.session.sessionInfo.adTrackingMetadataUrl)
+                            Text(session.sessionInfo.adTrackingMetadataUrl)
                         }
                     }
 #if os(tvOS)
@@ -87,7 +78,7 @@ extension SessionView {
     }
     
     private func getTimeToNextBreak(playhead: Double?) -> Double? {
-        if let minStartTime = (adTracker.adPods
+        if let minStartTime = (session.adPods
             .filter { ($0.startTime ?? -.infinity) > (playhead ?? 0) }
             .min { ($0.startTime ?? -.infinity) < ($1.startTime ?? -.infinity) }?.startTime) {
             return (minStartTime - (playhead ?? 0)) / 1_000
@@ -107,8 +98,6 @@ extension SessionView {
 
 struct SessionInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        SessionView()
-            .environmentObject(HarmonicAdTracker())
-            .environmentObject(PlayerViewModel())
+        SessionView(session: AdBeaconingSession(), playerObserver: PlayerObserver())
     }
 }
