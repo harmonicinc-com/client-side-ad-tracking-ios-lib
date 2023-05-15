@@ -10,6 +10,11 @@ import AVKit
 import os
 
 public struct PlayerView: View {
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier!,
+        category: String(describing: PlayerView.self)
+    )
+    
     @ObservedObject private var session: AdBeaconingSession
     
     public init(session: AdBeaconingSession) {
@@ -29,7 +34,17 @@ public struct PlayerView: View {
             .frame(height: 360)
 #endif
             .onReceive(session.$sessionInfo) { info in
-                load(with: info.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: session.automaticallyPreservesTimeOffsetFromLive)
+                if !info.manifestUrl.isEmpty && session.player.timeControlStatus != .playing {
+                    guard let url = URL(string: info.manifestUrl) else {
+                        Utility.log("Cannot load manifest URL: \(info.manifestUrl)",
+                                    to: session, level: .warning, with: Self.logger)
+                        return
+                    }
+                    let playerItem = AVPlayerItem(url: url)
+                    playerItem.automaticallyPreservesTimeOffsetFromLive = session.automaticallyPreservesTimeOffsetFromLive
+                    session.player.replaceCurrentItem(with: playerItem)
+                    session.player.play()
+                }
             }
             .onReceive(session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
                 reload(with: session.sessionInfo.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: enabled)
@@ -39,20 +54,6 @@ public struct PlayerView: View {
 }
 
 extension PlayerView {
-    private func load(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
-        guard session.player.timeControlStatus != .playing else { return }
-
-        let interstitialController = AVPlayerInterstitialEventMonitor(primaryPlayer: session.player)
-        let interstitialPlayer = interstitialController.interstitialPlayer
-        let interstitialStatus = interstitialPlayer.timeControlStatus
-        if interstitialStatus == .playing {
-            interstitialPlayer.play()
-            return
-        }
-        
-        reload(with: urlString, isAutomaticallyPreservesTimeOffsetFromLive: isAutomaticallyPreservesTimeOffsetFromLive)
-    }
-    
     private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
         guard let url = URL(string: urlString) else { return }
         
@@ -64,7 +65,6 @@ extension PlayerView {
         let playerItem = AVPlayerItem(url: url)
         playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
         
-        // TODO: use session's player first
         // HMS-10699: Set a new player instead of using replaceCurrentItem(with:)
         session.player = AVPlayer(playerItem: playerItem)
         session.player.play()
