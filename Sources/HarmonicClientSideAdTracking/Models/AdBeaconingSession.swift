@@ -44,7 +44,8 @@ public class AdBeaconingSession: ObservableObject {
                                               manifestUrl: manifestUrl,
                                               adTrackingMetadataUrl: adTrackingMetadataUrl)
 
-                    if player.rate == 0 {
+                    let interstitialPlayer = AVPlayerInterstitialEventMonitor(primaryPlayer: player).interstitialPlayer
+                    if player.rate == 0 && interstitialPlayer.rate == 0 {
                         let newPlayerItem = AVPlayerItem(url: URL(string: manifestUrl)!)
                         newPlayerItem.automaticallyPreservesTimeOffsetFromLive = automaticallyPreservesTimeOffsetFromLive
                         player.replaceCurrentItem(with: newPlayerItem)

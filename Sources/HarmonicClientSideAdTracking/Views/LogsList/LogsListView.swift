@@ -31,13 +31,7 @@ public struct LogsListView: View {
                     .font(.caption2)
                     .padding()
                 List {
-                    ForEach(session.logMessages.filter({ logMessage in
-                        if filterErrors {
-                            return logMessage.isError
-                        } else {
-                            return true
-                        }
-                    })) { logMessage in
+                    ForEach(session.logMessages.filter { filterErrors ? $0.isError : true }) { logMessage in
                         NavigationLink(destination: LogMessageView(logMessage: logMessage)) {
                             VStack(alignment: .leading) {
                                 Text(dateFormatter.string(from: Date(timeIntervalSince1970: logMessage.timeStamp)))
@@ -52,6 +46,8 @@ public struct LogsListView: View {
                 }
                 Spacer()
             }
+            .navigationTitle("Logs")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Dismiss") {
