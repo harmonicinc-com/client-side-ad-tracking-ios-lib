@@ -43,10 +43,12 @@ public class AdBeaconingSession: ObservableObject {
                                               mediaUrl: mediaUrl,
                                               manifestUrl: manifestUrl,
                                               adTrackingMetadataUrl: adTrackingMetadataUrl)
-                    
-                    let newPlayerItem = AVPlayerItem(url: URL(string: manifestUrl)!)
-                    newPlayerItem.automaticallyPreservesTimeOffsetFromLive = automaticallyPreservesTimeOffsetFromLive
-                    player.replaceCurrentItem(with: newPlayerItem)
+
+                    if player.rate == 0 {
+                        let newPlayerItem = AVPlayerItem(url: URL(string: manifestUrl)!)
+                        newPlayerItem.automaticallyPreservesTimeOffsetFromLive = automaticallyPreservesTimeOffsetFromLive
+                        player.replaceCurrentItem(with: newPlayerItem)
+                    }
                 } catch {
                     Utility.log("Failed to load media with URL: \(mediaUrl); Error: \(error)",
                                 to: self, level: .warning, with: Self.logger)                    
