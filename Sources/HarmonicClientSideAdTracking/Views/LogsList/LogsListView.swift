@@ -47,7 +47,9 @@ public struct LogsListView: View {
                 Spacer()
             }
             .navigationTitle("Logs")
+#if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+#endif
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Dismiss") {
