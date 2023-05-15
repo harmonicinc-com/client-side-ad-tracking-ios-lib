@@ -48,7 +48,9 @@ class BeaconSender {
     
     func checkNeedSendBeaconsForPlayedRange() async {
         let timeRangesToCheck = getIntersectionsWithLastDataRange()
-        Self.logger.trace("timeRangesToCheck for played ranges: \(timeRangesToCheck)")
+        Utility.log("timeRangesToCheck for played ranges: \(timeRangesToCheck)",
+                    to: session, level: .debug, with: Self.logger)
+        
         await withTaskGroup(of: Void.self, body: { group in
             for pod in session.adPods {
                 for ad in pod.ads {
@@ -61,8 +63,9 @@ class BeaconSender {
                             && Utility.trackingEventIsIn(timeRangesToCheck, for: trackingEvent, with: MAX_TOLERANCE_EVENT_END_TIME) {
                             group.addTask {
                                 await self.sendBeacon(trackingEvent)
-                                Self.logger.trace("Sending beacon for missed event: \(trackingEvent.signalingUrls)")
                             }
+                            Utility.log("Sending beacon for missed event: \(trackingEvent.signalingUrls)",
+                                        to: session, level: .debug, with: Self.logger)
                         }
                     }
                 }
@@ -94,10 +97,11 @@ class BeaconSender {
         session.latestPlayhead = playhead
     }
     
-    private func shouldCheckBeaconForInterstitials(playhead: Double) -> Bool {
+    private func shouldCheckBeaconForInterstitials(playhead: Double, debugReason: Bool = false) -> Bool {
         var shouldCheckBeacon = true
-//        var isTrueReason = 0
-//        var isFalseReason = 0
+        
+        var isTrueReason = 0
+        var isFalseReason = 0
         
         if session.playerObserver.hasInterstitialEvents,
            let interstitialStatus = session.playerObserver.interstitialStatus,
@@ -115,18 +119,26 @@ class BeaconSender {
                     if abs(interstitialStop - (interstitialDate + duration)) <= INTERSTITIAL_BEACON_SEND_TOLERANCE &&
                         abs(interstitialStop - playhead) <= INTERSTITIAL_BEACON_SEND_TOLERANCE {
                         shouldCheckBeacon = true
-//                        isTrueReason = 1
+                        isTrueReason = 1
                     } else {
                         shouldCheckBeacon = false
-//                        isFalseReason = 1
-                        Self.logger.trace("shouldCheckBeacon is false; interstitial date: \(Utility.getFormattedString(from: interstitialDate)); stopped: \(Utility.getFormattedString(from: interstitialStop)); duration: \(duration / 1_000)")
+                        isFalseReason = 1
+                        Utility.log("shouldCheckBeacon is false; interstitial date: \(Utility.getFormattedString(from: interstitialDate)); stopped: \(Utility.getFormattedString(from: interstitialStop)); duration: \(duration / 1_000)",
+                                    to: session, level: .debug, with: Self.logger)
                     }
                 }
             }
             
         }
         
-//        Self.logger.trace("Should check beacon with playhead: \(HarmonicAdTracker.getFormattedString(from: playhead)) is \(shouldCheckBeacon) with reason (\(shouldCheckBeacon ? isTrueReason : isFalseReason)); hasEvents: \(playerObserver.hasInterstitialEvents); status: \(playerObserver.interstitialStatus?.rawValue ?? -1); playheadIsInStoredAdPods: \(adTracker.playheadIsIncludedInStoredAdPods())")
+        if debugReason {
+            let debugMessage = "Should check beacon with playhead: \(Utility.getFormattedString(from: playhead)) "
+            + "is \(shouldCheckBeacon) with reason (\(shouldCheckBeacon ? isTrueReason : isFalseReason)); "
+            + "hasEvents: \(self.session.playerObserver.hasInterstitialEvents); "
+            + "status: \(self.session.playerObserver.interstitialStatus?.rawValue ?? -1); "
+            + "playheadIsInStoredAdPods: \(Utility.playheadIsIncludedIn(self.session.adPods, for: playhead, startTolerance: 0, endTolerance: AD_END_TRACKING_EVENT_TIME_TOLERANCE))"
+            Utility.log(debugMessage, to: session, level: .debug, with: Self.logger)
+        }
         
         return shouldCheckBeacon
     }
@@ -210,17 +222,17 @@ class BeaconSender {
                     if !(200...299 ~= response.statusCode) {
                         throw HarmonicAdTrackerError.beaconError("Failed to send beacon to \(urlString); Status \(response.statusCode)")
                     }
-                    Self.logger.trace("Sent beacon to : \(urlString, privacy: .public)")
+                    Utility.log("Sent beacon to : \(urlString)", to: session, level: .debug, with: Self.logger)
                 }
                 
             })
             
             trackingEvent.reportingState = .done
         } catch HarmonicAdTrackerError.beaconError(let errorMessage) {
-            Self.logger.error("Failed to send beacon; the error message is: \(errorMessage, privacy: .public)")
+            Utility.log("Failed to send beacon; the error message is: \(errorMessage)", to: session, level: .error, with: Self.logger)
             trackingEvent.reportingState = .failed
         } catch {
-            Self.logger.error("Failed to send beacon; unexpected error: \(error, privacy: .public)")
+            Utility.log("Failed to send beacon; unexpected error: \(error)", to: session, level: .error, with: Self.logger)
             trackingEvent.reportingState = .failed
         }
     }

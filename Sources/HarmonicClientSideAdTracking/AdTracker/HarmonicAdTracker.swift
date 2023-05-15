@@ -52,19 +52,31 @@ public class HarmonicAdTracker {
         }
         
         var metadataUrl = session.sessionInfo.adTrackingMetadataUrl
-        Self.logger.trace("Try calling AdMetadataHelper.requestAdMetadata (latest playhead is \(Utility.getFormattedString(from: playhead), privacy: .public))")
+        Utility.log("Try calling AdMetadataHelper.requestAdMetadata (latest playhead is \(Utility.getFormattedString(from: playhead)))",
+                    to: session, level: .debug, with: Self.logger)
         do {
             let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl, playhead: playhead)
             await updateLatestInfo(using: adBeacon)
         } catch {
             metadataUrl += "&start=\(Int(playhead))"
-            Self.logger.trace("Last call failed with error: \(error); try calling AdMetadataHelper.requestAdMetadata with start param: \(Utility.getFormattedString(from: playhead), privacy: .public) (the new url is: \(metadataUrl, privacy: .public))")
+            Utility.log("Last call to AdMetadataHelper.requestAdMetadata failed with error: \(error); try calling AdMetadataHelper.requestAdMetadata with start param: \(Utility.getFormattedString(from: playhead)) (the new url is: \(metadataUrl))",
+                        to: session, level: .info, with: Self.logger)
             let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl, playhead: nil)
             await updateLatestInfo(using: adBeacon)
         }
     }
     
     private func updateLatestInfo(using adBeacon: AdBeacon) async {
+        guard let latestDataRange = adBeacon.dataRange else {
+            Utility.log("AdBeacon has empty DataRange.",
+                        to: session, level: .warning, with: Self.logger)
+            return
+        }
+        
+        let adPodIDs = adBeacon.adBreaks.map { $0.id ?? "nil" }
+        Utility.log("Got \(adBeacon.adBreaks.count) ad pods: \(adPodIDs) with \(latestDataRange)",
+                    to: session, level: .debug, with: Self.logger)
+        
         session.latestDataRange = adBeacon.dataRange
         updatePods(adBeacon.adBreaks)
         await beaconSender.checkNeedSendBeaconsForPlayedRange()
@@ -90,7 +102,8 @@ public class HarmonicAdTracker {
                     do {
                         try await self.tryRefreshMetadata()
                     } catch {
-                        Self.logger.warning("tryRefreshMetadata failed: \(error)")
+                        Utility.log("tryRefreshMetadata failed: \(error)",
+                                    to: self.session, level: .warning, with: Self.logger)
                     }
                 }
             })
@@ -112,13 +125,15 @@ public class HarmonicAdTracker {
                                                  endTolerance: AD_END_TOLERANCE_FOR_TIMEJUMP_RESET),
                    abs(lastPlayhead.timeIntervalSince(currentPlayhead)) > RESET_AD_PODS_IF_TIMEJUMP_EXCEEDS {
                     let adPodIDs = self.session.adPods.map { $0.id ?? "nil" }
-                    Self.logger.trace("Detected time jump (current playhead: \(Utility.getFormattedString(from: currentPlayhead)) (last playhead: \(Utility.getFormattedString(from: lastPlayhead))), resetting ad pods (\(adPodIDs))")
+                    Utility.log("Detected time jump (current playhead: \(Utility.getFormattedString(from: currentPlayhead)) (last playhead: \(Utility.getFormattedString(from: lastPlayhead))), resetting ad pods (\(adPodIDs))",
+                                to: session, level: .debug, with: Self.logger)
                     Task {
                         self.resetAdPods()
                         do {
                             try await self.tryRefreshMetadata()
                         } catch {
-                            Self.logger.warning("tryRefreshMetadata failed: \(error)")
+                            Utility.log("tryRefreshMetadata failed: \(error)",
+                                        to: self.session, level: .warning, with: Self.logger)
                         }
                     }
                 }

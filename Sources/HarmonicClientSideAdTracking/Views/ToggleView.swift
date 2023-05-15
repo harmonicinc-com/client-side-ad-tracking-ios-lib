@@ -20,7 +20,7 @@ public struct ToggleView: View {
         ExpandableListView("Settings", isExpanded: $expand) {
             VStack {
                 Toggle("Debug Overlay", isOn: $session.isShowDebugOverlay)
-                Toggle("Set Automatically Preserves Time Offset From Live", isOn: $session.automaticallyPreservesTimeOffsetFromLive)
+                Toggle("Automatically Preserves Time Offset From Live", isOn: $session.automaticallyPreservesTimeOffsetFromLive)
             }
             .padding(.trailing, 10)
         }

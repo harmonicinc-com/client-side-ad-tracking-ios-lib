@@ -10,11 +10,6 @@ import AVKit
 import os
 
 public struct PlayerView: View {
-    private static let logger = Logger(
-        subsystem: Bundle.module.bundleIdentifier!,
-        category: String(describing: PlayerView.self)
-    )
-    
     @ObservedObject private var session: AdBeaconingSession
     
     public init(session: AdBeaconingSession) {
@@ -69,10 +64,9 @@ extension PlayerView {
         let playerItem = AVPlayerItem(url: url)
         playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
         
+        // TODO: use session's player first
         // HMS-10699: Set a new player instead of using replaceCurrentItem(with:)
         session.player = AVPlayer(playerItem: playerItem)
-        session.playerObserver.setPlayer(session.player)
-        
         session.player.play()
     }
 }

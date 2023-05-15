@@ -16,6 +16,8 @@ public class PlayerObserver: ObservableObject {
         category: String(describing: PlayerObserver.self)
     )
     
+    var session: AdBeaconingSession?
+    
     @Published public private(set) var currentDate: Date?
     
     @Published public private(set) var playhead: Double?
@@ -44,7 +46,9 @@ public class PlayerObserver: ObservableObject {
     
     init() {}
     
-    func setPlayer(_ player: AVPlayer) {
+    func setSession(_ session: AdBeaconingSession) {
+        let player = session.player
+        
         resetObservations()
         
         setCurrentDateTimer()
@@ -132,7 +136,8 @@ public class PlayerObserver: ObservableObject {
                     return (item.asset, item.asset.duration)
                 })
                 if !interstitialPlayerItems.isEmpty {
-                    Self.logger.warning("No ads found in current event of the interstitial monitor, using the interstital player's queued ads instead.")
+                    Utility.log("No ads found in current event of the interstitial monitor, using the interstital player's queued ads instead.",
+                                to: session, level: .error, with: Self.logger)
                     await setInterstitialItems(interstitialPlayerItems)
                 }
             }
@@ -188,7 +193,8 @@ public class PlayerObserver: ObservableObject {
                 
                 guard interstitialPlayer.timeControlStatus == .playing else { return }
                 guard let currentPlayingIndex = self.currentInterstitialItems.firstIndex(where: { $0.0 == interstitialPlayer.currentItem?.asset }) else {
-                    Self.logger.warning("Cannot find current interstitial item in list.")
+                    Utility.log("Cannot find current interstitial item in list.",
+                                to: session, level: .warning, with: Self.logger)
                     return
                 }
                 

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import os
 
 struct Utility {
     private static let AD_TRACKING_METADATA_FILE_NAME = "metadata"
@@ -15,6 +16,25 @@ struct Utility {
         formatter.dateFormat = "HH:mm:ss.SSS"
         return formatter
     }()
+    
+    @MainActor
+    static func log(_ message: String, to session: AdBeaconingSession?, level: LogLevel, with logger: Logger) {
+        if let session = session {
+            let isError = (level == .error || level == .warning)
+            session.logMessages.append(LogMessage(timeStamp: Date().timeIntervalSince1970, message: message, isError: isError))
+        }
+        
+        switch level {
+        case .debug:
+            logger.debug("\(message, privacy: .public)")
+        case .info:
+            logger.info("\(message, privacy: .public)")
+        case .error:
+            logger.error("\(message, privacy: .public)")
+        case .warning:
+            logger.warning("\(message, privacy: .public)")
+        }
+    }
     
     static func makeRequest(to urlString: String) async throws -> (Data, HTTPURLResponse) {
         guard let url = URL(string: urlString) else {

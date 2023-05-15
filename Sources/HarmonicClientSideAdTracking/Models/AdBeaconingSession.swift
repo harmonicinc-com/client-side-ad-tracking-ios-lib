@@ -18,7 +18,7 @@ public class AdBeaconingSession: ObservableObject {
     
     public var player = AVPlayer() {
         didSet {
-            playerObserver.setPlayer(player)
+            playerObserver.setSession(self)
         }
     }
     public let playerObserver = PlayerObserver()
@@ -48,8 +48,8 @@ public class AdBeaconingSession: ObservableObject {
                     newPlayerItem.automaticallyPreservesTimeOffsetFromLive = automaticallyPreservesTimeOffsetFromLive
                     player.replaceCurrentItem(with: newPlayerItem)
                 } catch {
-                    let errorMessage = "Error loading media with URL: \(mediaUrl); Error: \(error)"
-                    Self.logger.error("\(errorMessage, privacy: .public)")
+                    Utility.log("Failed to load media with URL: \(mediaUrl); Error: \(error)",
+                                to: self, level: .warning, with: Self.logger)                    
                 }
             }
         }
@@ -59,6 +59,7 @@ public class AdBeaconingSession: ObservableObject {
     @Published public internal(set) var adPods: [AdBreak] = []
     @Published public internal(set) var latestDataRange: DataRange?
     @Published public internal(set) var playedTimeOutsideDataRange: [DataRange] = []
+    @Published public internal(set) var logMessages: [LogMessage] = []
     
     @Published public internal(set) var isShowDebugOverlay = true
     @Published public internal(set) var automaticallyPreservesTimeOffsetFromLive = false
@@ -67,7 +68,7 @@ public class AdBeaconingSession: ObservableObject {
     var latestPlayhead: Double = 0
     
     public init() {
-        self.playerObserver.setPlayer(self.player)
+        self.playerObserver.setSession(self)
     }
     
 }

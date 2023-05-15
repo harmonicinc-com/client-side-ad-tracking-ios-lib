@@ -7,14 +7,8 @@
 
 import Foundation
 import Combine
-import os
 
 struct AdMetadataHelper {
-    private static let logger = Logger(
-        subsystem: Bundle.module.bundleIdentifier!,
-        category: String(describing: AdMetadataHelper.self)
-    )
-    
     private static let KEEP_PODS_FOR_MS: Double = 1_000 * 60 * 2   // 2 minutes
     private static let EARLY_FETCH_MS: Double = 5_000
     
@@ -38,9 +32,6 @@ struct AdMetadataHelper {
             throw HarmonicAdTrackerError.metadataError("No DataRange returned in metadata.")
         }
         
-        // TODO: may need to upate latestDataRange anyways (even if throw below)
-        // self.latestDataRange = latestDataRange
-        
         let adPodIDs = adBeacon.adBreaks.map { $0.id ?? "nil" }
         
         if let playhead = playhead {
@@ -49,7 +40,6 @@ struct AdMetadataHelper {
             }
         }
         
-        Self.logger.trace("Got \(adBeacon.adBreaks.count) ad pods: \(adPodIDs, privacy: .public) with \(latestDataRange, privacy: .public)")
         return adBeacon
     }
     
