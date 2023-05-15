@@ -35,25 +35,34 @@ public struct PlayerView: View {
 #endif
             .onReceive(session.$sessionInfo) { info in
                 if !info.manifestUrl.isEmpty && session.player.timeControlStatus != .playing {
-                    guard let url = URL(string: info.manifestUrl) else {
-                        Utility.log("Cannot load manifest URL: \(info.manifestUrl)",
-                                    to: session, level: .warning, with: Self.logger)
-                        return
+                    let interstitialPlayer = AVPlayerInterstitialEventMonitor(primaryPlayer: session.player).interstitialPlayer
+                    if interstitialPlayer.timeControlStatus != .playing {
+                        load(info.manifestUrl,
+                             isAutomaticallyPreservesTimeOffsetFromLive: session.automaticallyPreservesTimeOffsetFromLive)
                     }
-                    let playerItem = AVPlayerItem(url: url)
-                    playerItem.automaticallyPreservesTimeOffsetFromLive = session.automaticallyPreservesTimeOffsetFromLive
-                    session.player.replaceCurrentItem(with: playerItem)
-                    session.player.play()
                 }
             }
             .onReceive(session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
-                reload(with: session.sessionInfo.manifestUrl, isAutomaticallyPreservesTimeOffsetFromLive: enabled)
+                reload(with: session.sessionInfo.manifestUrl,
+                       isAutomaticallyPreservesTimeOffsetFromLive: enabled)
             })
         }
     }
 }
 
 extension PlayerView {
+    private func load(_ urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
+        guard let url = URL(string: urlString) else {
+            Utility.log("Cannot load manifest URL: \(urlString)",
+                        to: session, level: .warning, with: Self.logger)
+            return
+        }
+        let playerItem = AVPlayerItem(url: url)
+        playerItem.automaticallyPreservesTimeOffsetFromLive = session.automaticallyPreservesTimeOffsetFromLive
+        session.player.replaceCurrentItem(with: playerItem)
+        session.player.play()
+    }
+    
     private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
         guard let url = URL(string: urlString) else { return }
         
