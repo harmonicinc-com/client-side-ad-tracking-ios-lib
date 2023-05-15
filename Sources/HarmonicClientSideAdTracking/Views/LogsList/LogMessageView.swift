@@ -22,14 +22,14 @@ struct LogMessageView: View {
                 Text("Timestamp")
                     .font(.caption2)
                 Text(dateFormatter.string(from: Date(timeIntervalSince1970: logMessage.timeStamp)))
-                    .font(.footnote)
+                    .font(.system(.footnote, design: .monospaced))
             }
             VStack(alignment: .leading) {
                 Text("Log message")
                     .font(.caption2)
                 Text(logMessage.message)
                     .foregroundColor(logMessage.isError ? .red : .primary)
-                    .font(.footnote)
+                    .font(.system(.footnote, design: .monospaced))
             }
         }
     }

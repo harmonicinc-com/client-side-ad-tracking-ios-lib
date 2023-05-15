@@ -37,7 +37,7 @@ public struct LogsListView: View {
                                 Text(dateFormatter.string(from: Date(timeIntervalSince1970: logMessage.timeStamp)))
                                     .font(.caption2)
                                 Text(logMessage.message)
-                                    .font(.footnote)
+                                    .font(.system(.footnote, design: .monospaced))
                                     .lineLimit(2)
                                     .foregroundColor(logMessage.isError ? .red : .primary)
                             }
