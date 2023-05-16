@@ -63,6 +63,6 @@ public struct LogsListView: View {
 
 struct LogMessagesView_Previews: PreviewProvider {
     static var previews: some View {
-        LogsListView(session: AdBeaconingSession())
+        LogsListView(session: createSampleSession() ?? AdBeaconingSession())
     }
 }

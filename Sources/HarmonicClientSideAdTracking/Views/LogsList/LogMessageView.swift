@@ -37,6 +37,6 @@ struct LogMessageView: View {
 
 struct LogMessageView_Previews: PreviewProvider {
     static var previews: some View {
-        LogMessageView(logMessage: LogMessage(timeStamp: Date().timeIntervalSince1970, message: "sample message"))
+        LogMessageView(logMessage: sampleLogMessages[2])
     }
 }

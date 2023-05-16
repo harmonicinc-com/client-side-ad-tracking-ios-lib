@@ -38,6 +38,6 @@ struct AdBreakView: View {
 
 struct AdBreakView_Previews: PreviewProvider {
     static var previews: some View {
-        AdBreakView(adBreak: sampleAdBeacon?.adBreaks.first ?? AdBreak(), session: AdBeaconingSession())
+        AdBreakView(adBreak: sampleAdBeacon?.adBreaks.first ?? AdBreak(), session: createSampleSession() ?? AdBeaconingSession())
     }
 }

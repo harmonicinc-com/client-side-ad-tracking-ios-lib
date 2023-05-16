@@ -30,6 +30,6 @@ public struct AdPodListView: View {
 
 struct AdPodListView_Previews: PreviewProvider {
     static var previews: some View {
-        AdPodListView(session: AdBeaconingSession())
+        AdPodListView(session: createSampleSession() ?? AdBeaconingSession())
     }
 }

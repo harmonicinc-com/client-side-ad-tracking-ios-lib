@@ -98,6 +98,6 @@ extension SessionView {
 
 struct SessionInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        SessionView(session: AdBeaconingSession(), playerObserver: PlayerObserver())
+        SessionView(session: createSampleSession() ?? AdBeaconingSession(), playerObserver: PlayerObserver())
     }
 }

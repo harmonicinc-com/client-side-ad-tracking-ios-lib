@@ -65,6 +65,6 @@ extension DetailedDebugInfoView {
 
 struct DetailedDebugInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        DetailedDebugInfoView(session: AdBeaconingSession())
+        DetailedDebugInfoView(session: createSampleSession() ?? AdBeaconingSession())
     }
 }

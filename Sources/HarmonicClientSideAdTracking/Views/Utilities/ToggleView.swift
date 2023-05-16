@@ -30,6 +30,6 @@ public struct ToggleView: View {
 
 struct SwiftUIView_Previews: PreviewProvider {
     static var previews: some View {
-        ToggleView(session: AdBeaconingSession())
+        ToggleView(session: createSampleSession() ?? AdBeaconingSession())
     }
 }

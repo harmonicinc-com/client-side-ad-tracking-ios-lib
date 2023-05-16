@@ -61,6 +61,6 @@ extension PlayerView {
 
 struct PlayerView_Previews: PreviewProvider {
     static var previews: some View {
-        PlayerView(session: AdBeaconingSession())
+        PlayerView(session: createSampleSession() ?? AdBeaconingSession())
     }
 }

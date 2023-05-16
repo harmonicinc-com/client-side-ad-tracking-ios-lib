@@ -79,6 +79,6 @@ extension AdView {
 
 struct AdView_Previews: PreviewProvider {
     static var previews: some View {
-        AdView(session: AdBeaconingSession(), ad: sampleAdBeacon?.adBreaks.first?.ads.first ?? Ad())
+        AdView(session: createSampleSession() ?? AdBeaconingSession(), ad: sampleAdBeacon?.adBreaks.first?.ads.first ?? Ad())
     }
 }
