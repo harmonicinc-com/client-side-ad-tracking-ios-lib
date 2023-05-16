@@ -41,7 +41,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         - Try to obtain a manifest URL with a session ID (if the provided `mediaUrl` doesn't already contain one);
         - Try to obtain the corresponding metadata URL with the session ID.
 
-5. Observe the session's `manifestUrl` by using the `.onReceive(_:perform:)` method in SwiftUI (for UIKit, please see the [example](#uikit) below). When it is set, create an AVPlayerItem with the URL:
+5. Observe the session's `manifestUrl` by using the `.onReceive(_:perform:)` method in SwiftUI (for UIKit, please see the [example](#uikit) below). When it is set and not empty, create an `AVPlayerItem` with the URL and set it in the player:
 
     ```swift
     if !manifestUrl.isEmpty {
@@ -192,6 +192,7 @@ struct ContentView: View {
 ```swift
 import UIKit
 import AVKit
+import Combine
 import HarmonicClientSideAdTracking
 
 class ViewController: UIViewController {
