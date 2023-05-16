@@ -194,7 +194,7 @@ public class PlayerObserver: ObservableObject {
                 guard interstitialPlayer.timeControlStatus == .playing else { return }
                 guard let currentPlayingIndex = self.currentInterstitialItems.firstIndex(where: { $0.0 == interstitialPlayer.currentItem?.asset }) else {
                     Utility.log("Cannot find current interstitial item in list.",
-                                to: session, level: .warning, with: Self.logger)
+                                to: self.session, level: .warning, with: Self.logger)
                     return
                 }
                 

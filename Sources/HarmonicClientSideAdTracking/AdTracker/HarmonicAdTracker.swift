@@ -126,7 +126,7 @@ public class HarmonicAdTracker {
                    abs(lastPlayhead.timeIntervalSince(currentPlayhead)) > RESET_AD_PODS_IF_TIMEJUMP_EXCEEDS {
                     let adPodIDs = self.session.adPods.map { $0.id ?? "nil" }
                     Utility.log("Detected time jump (current playhead: \(Utility.getFormattedString(from: currentPlayhead)) (last playhead: \(Utility.getFormattedString(from: lastPlayhead))), resetting ad pods (\(adPodIDs))",
-                                to: session, level: .debug, with: Self.logger)
+                                to: self.session, level: .debug, with: Self.logger)
                     Task {
                         self.resetAdPods()
                         do {
