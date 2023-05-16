@@ -33,15 +33,6 @@ public struct PlayerView: View {
 #else
             .frame(height: 360)
 #endif
-            .onReceive(session.$sessionInfo) { info in
-                if !info.manifestUrl.isEmpty && session.player.timeControlStatus != .playing {
-                    let interstitialPlayer = AVPlayerInterstitialEventMonitor(primaryPlayer: session.player).interstitialPlayer
-                    if interstitialPlayer.timeControlStatus != .playing {
-                        load(info.manifestUrl,
-                             isAutomaticallyPreservesTimeOffsetFromLive: session.automaticallyPreservesTimeOffsetFromLive)
-                    }
-                }
-            }
             .onReceive(session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
                 reload(with: session.sessionInfo.manifestUrl,
                        isAutomaticallyPreservesTimeOffsetFromLive: enabled)
@@ -51,18 +42,6 @@ public struct PlayerView: View {
 }
 
 extension PlayerView {
-    private func load(_ urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
-        guard let url = URL(string: urlString) else {
-            Utility.log("Cannot load manifest URL: \(urlString)",
-                        to: session, level: .warning, with: Self.logger)
-            return
-        }
-        let playerItem = AVPlayerItem(url: url)
-        playerItem.automaticallyPreservesTimeOffsetFromLive = session.automaticallyPreservesTimeOffsetFromLive
-        session.player.replaceCurrentItem(with: playerItem)
-        session.player.play()
-    }
-    
     private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
         guard let url = URL(string: urlString) else { return }
         

@@ -266,7 +266,7 @@ Also, the different URLs of the session:
 
 ### `PlayerView`
 
-Contains a `VideoPlayer` with a debug overlay showing the real-world time and the latency. It also creates an `AVPlayerItem` for the player to play, and reloads the player when the `automaticallyPreservesTimeOffsetFromLive` option is changed.
+Contains a `VideoPlayer` with a debug overlay showing the real-world time and the latency. It also reloads by creating a new instance of player when the session's `automaticallyPreservesTimeOffsetFromLive` option is changed.
 
 ## Demo app
 

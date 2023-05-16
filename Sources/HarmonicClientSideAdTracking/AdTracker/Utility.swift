@@ -8,7 +8,7 @@
 import Foundation
 import os
 
-struct Utility {
+public struct Utility {
     private static let AD_TRACKING_METADATA_FILE_NAME = "metadata"
     
     private static let dateFormatter: DateFormatter = {
@@ -18,7 +18,7 @@ struct Utility {
     }()
     
     @MainActor
-    static func log(_ message: String, to session: AdBeaconingSession?, level: LogLevel, with logger: Logger) {
+    public static func log(_ message: String, to session: AdBeaconingSession?, level: LogLevel, with logger: Logger) {
         if let session = session {
             let isError = (level == .error || level == .warning)
             session.logMessages.append(LogMessage(timeStamp: Date().timeIntervalSince1970, message: message, isError: isError))
