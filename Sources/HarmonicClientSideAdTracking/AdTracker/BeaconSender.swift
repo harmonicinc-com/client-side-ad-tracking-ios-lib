@@ -78,7 +78,7 @@ class BeaconSender {
             .autoconnect()
             .sink(receiveValue: { [weak self] _ in
                 guard let self = self else { return }
-                guard let playhead = session.playerObserver.playhead else { return }
+                guard let playhead = self.session.playerObserver.playhead else { return }
                 
                 self.shouldCheckBeacon = self.shouldCheckBeaconForInterstitials(playhead: playhead)
                 self.playedRangeChecker.setShouldCheckBeacon(self.shouldCheckBeacon)
