@@ -41,26 +41,35 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         - Try to obtain a manifest URL with a session ID (if the provided `mediaUrl` doesn't already contain one);
         - Try to obtain the corresponding metadata URL with the session ID.
 
-5. Create a `HarmonicAdTracker` object and initialize it with the session created above:
+5. Observe the session's `manifestUrl` by using the `.onReceive(_:perform:)` method in SwiftUI (for UIKit, please see the [example](#uikit) below). When it is set, create an AVPlayerItem with the URL:
+
+    ```swift
+    if !manifestUrl.isEmpty {
+        let myPlayerItem = AVPlayerItem(url: URL(string: manifestUrl)!)
+        mySession.player.replaceCurrentItem(with: myPlayerItem)
+    }
+    ```
+
+6. Create a `HarmonicAdTracker` object and initialize it with the session created above:
 
     ```swift
     let adTracker: HarmonicAdTracker?
     adTracker = HarmonicAdTracker(session: mySession)
     ```
 
-6. Start the ad tracker:
+7. Start the ad tracker:
 
     ```swift
     adTracker?.start()
     ```
 
-7. Start playing and beacons will be sent when ads are played:
+8. Start playing and beacons will be sent when ads are played:
 
     ```swift
     mySession.player.play()
     ```
 
-8. You may observe the following information from the session instance:
+9. You may observe the following information from the session instance:
 
     - To get the URLs with the session ID:
         ```swift
@@ -136,7 +145,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         logMessages[0].isError
         ```
 
-9. Stop the ad tracker when it is not needed:
+10. Stop the ad tracker when it is not needed:
 
     ```swift
     adTracker?.stop()
@@ -160,12 +169,16 @@ struct ContentView: View {
     var body: some View {
         VideoPlayer(player: mySession.player)
             .onAppear {
-                mySession.mediaUrl = <hls-master-playlist-url>
-
+                mySession.mediaUrl = "<hls-master-playlist-url>"
                 adTracker = HarmonicAdTracker(session: mySession)
-                adTracker?.start()
-
-                mySession.player.play()
+            }
+            .onReceive(mySession.sessionInfo.$manifestUrl) { manifestUrl in
+                if !manifestUrl.isEmpty {
+                    let myPlayerItem = AVPlayerItem(url: URL(string: manifestUrl)!)
+                    mySession.player.replaceCurrentItem(with: myPlayerItem)
+                    mySession.player.play()
+                    adTracker?.start()
+                }
             }
             .onDisappear {
                 adTracker?.stop()
@@ -184,19 +197,29 @@ import HarmonicClientSideAdTracking
 class ViewController: UIViewController {
     private var mySession = AdBeaconingSession()
     private var adTracker: HarmonicAdTracker?
+    private var sessionSub: AnyCancellable?
 
     override func viewDidAppear(_ animated: Bool) {
-        mySession.mediaUrl = <hls-master-playlist-url>
-
+        mySession.mediaUrl = "<hls-master-playlist-url>"
         adTracker = HarmonicAdTracker(session: mySession)
-        adTracker?.start()
 
         let controller = AVPlayerViewController()
         controller.player = mySession.player
+        present(controller, animated: true)
+    }
 
-        present(controller, animated: true) { [weak self] in
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        sessionSub = mySession.$sessionInfo.sink { [weak self] sessionInfo in
             guard let self = self else { return }
-            self.mySession.player.play()
+
+            if !sessionInfo.manifestUrl.isEmpty {
+                let myPlayerItem = AVPlayerItem(url: URL(string: sessionInfo.manifestUrl)!)
+                mySession.player.replaceCurrentItem(with: myPlayerItem)
+                mySession.player.play()
+                adTracker?.start()
+            }
         }
     }
 
