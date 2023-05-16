@@ -7,11 +7,11 @@
 
 import Foundation
 
-public struct SessionInfo {
+public class SessionInfo: ObservableObject {
     public var localSessionId: String = ""
     public var mediaUrl: String = ""
-    public var manifestUrl: String = ""
-    public var adTrackingMetadataUrl: String = ""
+    @Published public var manifestUrl: String = ""
+    @Published public var adTrackingMetadataUrl: String = ""
     
     public init(localSessionId: String = "", mediaUrl: String = "", manifestUrl: String = "", adTrackingMetadataUrl: String = "") {
         self.localSessionId = localSessionId
