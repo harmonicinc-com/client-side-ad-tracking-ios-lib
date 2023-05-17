@@ -18,7 +18,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
     import HarmonicClientSideAdTracking
     ```
 
-2. Create an `AdBeaconingSession` object:
+2. Create an [`AdBeaconingSession`](Sources/HarmonicClientSideAdTracking/Models/AdBeaconingSession.swift) object:
 
     ```swift
     let mySession = AdBeaconingSession()
@@ -34,14 +34,14 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
 4. Set the session's media URL to the master playlist of an HLS stream:
 
     ```swift
-    mySession.mediaUrl = <hls-master-playlist-url>
+    mySession.mediaUrl = "<hls-master-playlist-url>"
     ```
 
     - Note that the `AdBeaconingSession` object will then do the following:
         - Try to obtain a manifest URL with a session ID (if the provided `mediaUrl` doesn't already contain one);
         - Try to obtain the corresponding metadata URL with the session ID.
 
-5. Observe the session's `manifestUrl` by using the `.onReceive(_:perform:)` method in SwiftUI (for UIKit, please see the [example](#uikit) below). When it is set and not empty, create an `AVPlayerItem` with the URL and set it in the player:
+5. Observe the session's `manifestUrl` by using the [`.onReceive(_:perform:)`](<https://developer.apple.com/documentation/swiftui/view/onreceive(_:perform:)>) method in SwiftUI (for UIKit, please see the [example](#uikit) below). When it is set and not empty, create an `AVPlayerItem` with the URL and set it in the player:
 
     ```swift
     if !manifestUrl.isEmpty {
@@ -50,7 +50,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
     }
     ```
 
-6. Create a `HarmonicAdTracker` object and initialize it with the session created above:
+6. Create a [`HarmonicAdTracker`](Sources/HarmonicClientSideAdTracking/AdTracker/HarmonicAdTracker.swift) object and initialize it with the session created above:
 
     ```swift
     let adTracker: HarmonicAdTracker?
@@ -77,9 +77,9 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         ```
         URLs available:
         ```swift
-        sessionInfo.mediaUrl
-        sessionInfo.manifestUrl
-        sessionInfo.adTrackingMetadataUrl
+        sessionInfo.mediaUrl                        // String
+        sessionInfo.manifestUrl                     // String
+        sessionInfo.adTrackingMetadataUrl           // String
         ```
     - To get the list of `AdBreak`s returned from the ad metadata along with the status of the beaconing for each event.
         ```swift
@@ -87,26 +87,25 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         ```
         For example, in the first `AdBreak` of `adPods`:
         ```swift
-        adPods[0].id
-        adPods[0].startTime
-        adPods[0].duration
-        adPods[0].ads
+        adPods[0].id                                // String
+        adPods[0].startTime                         // Double: millisecondsSince1970
+        adPods[0].duration                          // Double: milliseconds
+        adPods[0].ads                               // [Ad]
         ```
         In the first `Ad` of `adPods[0].ads`:
         ```swift
-        ads[0].id
-        ads[0].startTime
-        ads[0].duration
-        ads[0].trackingEvents
+        ads[0].id                                   // String
+        ads[0].startTime                            // Double: millisecondsSince1970
+        ads[0].duration                             // Double: milliseconds
+        ads[0].trackingEvents                       // [TrackingEvent]
         ```
         In the first `TrackingEvent` of `ads[0].trackingEvents`:
         ```swift
-        trackingEvents[0].id
-        trackingEvents[0].event
-        trackingEvents[0].startTime
-        trackingEvents[0].duration
-        trackingEvents[0].signalingUrls
-        trackingEvents[0].reportingState
+        trackingEvents[0].event                     // EventType
+        trackingEvents[0].startTime                 // Double: millisecondsSince1970
+        trackingEvents[0].duration                  // Double: milliseconds
+        trackingEvents[0].signalingUrls             // [String]
+        trackingEvents[0].reportingState            // ReportingState
         ```
     - To get the latest DataRange returned from the ad metadata.
         ```swift
@@ -114,8 +113,8 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         ```
         To get the time in `millisecondsSince1970`:
         ```swift
-        latestDataRange.start
-        latestDataRange.end
+        latestDataRange.start                       // Double: millisecondsSince1970
+        latestDataRange.end                         // Double: millisecondsSince1970
         ```
     - To get the status and information of the player.
         ```swift
@@ -123,16 +122,16 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         ```
         Information available:
         ```swift
-        playerObserver.currentDate
-        playerObserver.playhead
-        playerObserver.primaryStatus
-        playerObserver.hasInterstitialEvents
-        playerObserver.interstitialStatus
-        playerObserver.interstitialDate
-        playerObserver.interstitialStoppedDate
-        playerObserver.interstitialStartTime
-        playerObserver.interstitialStopTime
-        playerObserver.currentInterstitialDuration
+        playerObserver.currentDate                  // Date
+        playerObserver.playhead                     // Double: millisecondsSince1970
+        playerObserver.primaryStatus                // AVPlayer.TimeControlStatus
+        playerObserver.hasInterstitialEvents        // Bool
+        playerObserver.interstitialStatus           // AVPlayer.TimeControlStatus
+        playerObserver.interstitialDate             // Double: millisecondsSince1970
+        playerObserver.interstitialStoppedDate      // Double: millisecondsSince1970
+        playerObserver.interstitialStartTime        // Double: seconds
+        playerObserver.interstitialStopTime         // Double: seconds
+        playerObserver.currentInterstitialDuration  // Double: milliseconds
         ```
     - To get the messages logged by the library.
         ```swift
@@ -140,9 +139,9 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         ```
         For example, in the first `LogMessage`:
         ```swift
-        logMessages[0].timeStamp
-        logMessages[0].message
-        logMessages[0].isError
+        logMessages[0].timeStamp                    // Double: secondsSince1970
+        logMessages[0].message                      // String
+        logMessages[0].isError                      // Bool
         ```
 
 10. Stop the ad tracker when it is not needed:
@@ -234,20 +233,20 @@ class ViewController: UIViewController {
 
 The library consists of several SwiftUI views that are used in the demo project. They are used to show how to display the progress of beacon-sending, and are not required for the ad beaconing logic to work.
 
-### `AdPodListView`
+### [`AdPodListView`](Sources/HarmonicClientSideAdTracking/Views/AdPodList/AdPodListView.swift)
 
 This view shows a list of `AdBreakView`s.
 
--   Each `AdBreakView` indicates an ad break, and shows a list of `AdView`s, each representing an ad in this ad break.
--   Each `AdView` indicates an ad, and shows a list of `TrackingEventView`s, each representing a tracking event in this ad.
--   Each `TrackingEventView` indicates a tracking event, and shows information for this particular tracking event, including:
+-   Each [`AdBreakView`](Sources/HarmonicClientSideAdTracking/Views/AdPodList/AdBreakView.swift) indicates an ad break, and shows a list of `AdView`s, each representing an ad in this ad break.
+-   Each [`AdView`](Sources/HarmonicClientSideAdTracking/Views/AdPodList/AdView.swift) indicates an ad, and shows a list of `TrackingEventView`s, each representing a tracking event in this ad.
+-   Each [`TrackingEventView`](Sources/HarmonicClientSideAdTracking/Views/AdPodList/TrackingEventView.swift) indicates a tracking event, and shows information for this particular tracking event, including:
 
     -   The event name
     -   The signaling URLs
     -   The time of the event
     -   The state of the beaconing of this event, which may be `idle`, `connecting`, `done`, or `failed`
 
-### `SessionView`
+### [`SessionView`](Sources/HarmonicClientSideAdTracking/Views/SessionView.swift)
 
 Shows information about playback:
 
@@ -264,9 +263,9 @@ Also, the different URLs of the session:
 -   Manifest URL (the redirected URL with a session ID)
 -   Ad tracking metadata URL
 
-### `PlayerView`
+### [`PlayerView`](Sources/HarmonicClientSideAdTracking/Views/PlayerView.swift)
 
-Contains a `VideoPlayer` with a debug overlay showing the real-world time and the latency. It also reloads by creating a new instance of player when the session's `automaticallyPreservesTimeOffsetFromLive` option is changed.
+Contains a [`VideoPlayer`](https://developer.apple.com/documentation/avkit/videoplayer) with a debug overlay showing the real-world time and the latency. It also reloads by creating a new instance of player when the session's [`automaticallyPreservesTimeOffsetFromLive`](https://developer.apple.com/documentation/avfoundation/avplayeritem/3229855-automaticallypreservestimeoffset) option is changed.
 
 ## Demo app
 
