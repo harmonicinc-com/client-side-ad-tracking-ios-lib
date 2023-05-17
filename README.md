@@ -21,38 +21,40 @@ Using Swift Package Manager, enter the URL of this package:
 https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
 ```
 
+[Back to TOC](#harmonicclientsideadtracking)
+
 ## Usage
 
-1. Import the library
+1.  Import the library
 
     ```swift
     import HarmonicClientSideAdTracking
     ```
 
-2. Create an [`AdBeaconingSession`](Sources/HarmonicClientSideAdTracking/Models/AdBeaconingSession.swift) object:
+2.  Create an [`AdBeaconingSession`](Sources/HarmonicClientSideAdTracking/Models/AdBeaconingSession.swift) object:
 
     ```swift
     let mySession = AdBeaconingSession()
     ```
 
-3. Optionally, set the session's player to your own instance of AVPlayer:
+3.  Optionally, set the session's player to your own instance of AVPlayer:
 
     ```swift
     let myAVPlayer = AVPlayer()
     mySession.player = myAVPlayer
     ```
 
-4. Set the session's media URL to the master playlist of an HLS stream:
+4.  Set the session's media URL to the master playlist of an HLS stream:
 
     ```swift
     mySession.mediaUrl = "<hls-master-playlist-url>"
     ```
 
-    - Note that the `AdBeaconingSession` object will then do the following:
-        - Try to obtain a manifest URL with a session ID (if the provided `mediaUrl` doesn't already contain one);
-        - Try to obtain the corresponding metadata URL with the session ID.
+    -   Note that the `AdBeaconingSession` object will then do the following:
+        -   Try to obtain a manifest URL with a session ID (if the provided `mediaUrl` doesn't already contain one);
+        -   Try to obtain the corresponding metadata URL with the session ID.
 
-5. Observe the session's `manifestUrl` by using the [`.onReceive(_:perform:)`](<https://developer.apple.com/documentation/swiftui/view/onreceive(_:perform:)>) method in SwiftUI (for UIKit, please see the [example](#uikit) below). When it is set and not empty, create an `AVPlayerItem` with the URL and set it in the player:
+5.  Observe the session's `manifestUrl` by using the [`.onReceive(_:perform:)`](<https://developer.apple.com/documentation/swiftui/view/onreceive(_:perform:)>) method in SwiftUI (for UIKit, please see the [example](#uikit) below). When it is set and not empty, create an `AVPlayerItem` with the URL and set it in the player:
 
     ```swift
     if !manifestUrl.isEmpty {
@@ -61,28 +63,28 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
     }
     ```
 
-6. Create a [`HarmonicAdTracker`](Sources/HarmonicClientSideAdTracking/AdTracker/HarmonicAdTracker.swift) object and initialize it with the session created above:
+6.  Create a [`HarmonicAdTracker`](Sources/HarmonicClientSideAdTracking/AdTracker/HarmonicAdTracker.swift) object and initialize it with the session created above:
 
     ```swift
     let adTracker: HarmonicAdTracker?
     adTracker = HarmonicAdTracker(session: mySession)
     ```
 
-7. Start the ad tracker:
+7.  Start the ad tracker:
 
     ```swift
     adTracker?.start()
     ```
 
-8. Start playing and beacons will be sent when ads are played:
+8.  Start playing and beacons will be sent when ads are played:
 
     ```swift
     mySession.player.play()
     ```
 
-9. You may observe the following information from the session instance:
+9.  You may observe the following information from the session instance:
 
-    - To get the URLs with the session ID:
+    -   To get the URLs with the session ID:
         ```swift
         let sessionInfo = mySession.sessionInfo
         ```
@@ -92,7 +94,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         sessionInfo.manifestUrl                     // String
         sessionInfo.adTrackingMetadataUrl           // String
         ```
-    - To get the list of `AdBreak`s returned from the ad metadata along with the status of the beaconing for each event.
+    -   To get the list of `AdBreak`s returned from the ad metadata along with the status of the beaconing for each event.
         ```swift
         let adPods = mySession.adPods
         ```
@@ -118,7 +120,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         trackingEvents[0].signalingUrls             // [String]
         trackingEvents[0].reportingState            // ReportingState
         ```
-    - To get the latest DataRange returned from the ad metadata.
+    -   To get the latest DataRange returned from the ad metadata.
         ```swift
         let latestDataRange = mySession.latestDataRange
         ```
@@ -127,7 +129,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         latestDataRange.start                       // Double: millisecondsSince1970
         latestDataRange.end                         // Double: millisecondsSince1970
         ```
-    - To get the status and information of the player.
+    -   To get the status and information of the player.
         ```swift
         let playerObserver = mySession.playerObserver
         ```
@@ -144,7 +146,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         playerObserver.interstitialStopTime         // Double: seconds
         playerObserver.currentInterstitialDuration  // Double: milliseconds
         ```
-    - To get the messages logged by the library.
+    -   To get the messages logged by the library.
         ```swift
         let logMessages = mySession.logMessages
         ```
@@ -157,9 +159,11 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
 
 10. Stop the ad tracker when it is not needed:
 
-    ```swift
-    adTracker?.stop()
-    ```
+        ```swift
+        adTracker?.stop()
+        ```
+
+[Back to TOC](#harmonicclientsideadtracking)
 
 ## Minimal working examples
 
@@ -240,6 +244,8 @@ class ViewController: UIViewController {
 }
 ```
 
+[Back to TOC](#harmonicclientsideadtracking)
+
 ## Main SwiftUI views
 
 The library consists of several SwiftUI views that are used in the demo project. They are used to show how to display the progress of beacon-sending, and are not required for the ad beaconing logic to work.
@@ -278,6 +284,10 @@ Also, the different URLs of the session:
 
 Contains a [`VideoPlayer`](https://developer.apple.com/documentation/avkit/videoplayer) with a debug overlay showing the real-world time and the latency. It also reloads by creating a new instance of player when the session's [`automaticallyPreservesTimeOffsetFromLive`](https://developer.apple.com/documentation/avfoundation/avplayeritem/3229855-automaticallypreservestimeoffset) option is changed.
 
+[Back to TOC](#harmonicclientsideadtracking)
+
 ## Demo app
 
 A demo app (that can be run on both iOS and tvOS) on how this library (including the SwiftUI views) may be used is available at the following repository: https://github.com/harmonicinc-com/client-side-ad-tracking-ios
+
+[Back to TOC](#harmonicclientsideadtracking)
