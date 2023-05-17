@@ -2,6 +2,17 @@
 
 A library for sending ad beacons from the client-side. Works with both traditional SSAI and HLS interstitials. Compatible with iOS/tvOS 15 and above.
 
+-   [Installation](#installation)
+-   [Usage](#usage)
+-   [Minimal working examples](#minimal-working-examples)
+    -   [SwiftUI](#swiftui)
+    -   [UIKit](#uikit)
+-   [Main SwiftUI views](#main-swiftui-views)
+    -   [`AdPodListView`](#adpodlistview)
+    -   [`SessionView`](#sessionview)
+    -   [`PlayerView`](#playerview)
+-   [Demo app](#demo-app)
+
 ## Installation
 
 Using Swift Package Manager, enter the URL of this package:
