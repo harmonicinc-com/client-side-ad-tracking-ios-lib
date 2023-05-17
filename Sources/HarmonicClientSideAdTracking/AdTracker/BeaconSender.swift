@@ -13,6 +13,7 @@ private let BEACON_UPDATE_INTERVAL: TimeInterval = 0.5
 private let INTERSTITIAL_BEACON_SEND_TOLERANCE: Double = 1_500
 private let MAX_TOLERANCE_IN_SPEED: Double = 2.5
 private let AD_END_TRACKING_EVENT_TIME_TOLERANCE: Double = 500
+private let MAX_TOLERANCE_EVENT_START_TIME: Double = 500
 private let MAX_TOLERANCE_EVENT_END_TIME: Double = 1_000
 
 @MainActor
@@ -182,7 +183,7 @@ class BeaconSender {
                                 // if time1 is within event start plus 1s (or duration for impression event)
                                 let endTime = startTime + max(duration, MAX_TOLERANCE_EVENT_END_TIME)
                                 
-                                if reportingState == .idle && startTime...endTime ~= time1 {
+                                if reportingState == .idle && (startTime - MAX_TOLERANCE_EVENT_START_TIME)...endTime ~= time1 {
                                     group.addTask {
                                         await self.sendBeacon(trackingEvent)
                                     }

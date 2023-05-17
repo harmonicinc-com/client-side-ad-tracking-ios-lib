@@ -167,10 +167,14 @@ public class PlayerObserver: ObservableObject {
                 guard let self = self else { return }
                 DispatchQueue.main.async {
                     self.interstitialStatus = newStatus
-                    if newStatus == .paused {
-                        if let interstitialDate = self.interstitialDate, let interstitialStopTime = self.interstitialStopTime {
+                }
+                if newStatus == .paused {
+                    if let interstitialDate = self.interstitialDate, let interstitialStopTime = self.interstitialStopTime {
+                        DispatchQueue.main.async {
                             self.interstitialStoppedDate = interstitialDate + interstitialStopTime * 1_000
-                        } else {
+                        }
+                    } else {
+                        DispatchQueue.main.async {
                             self.interstitialStoppedDate = self.playhead
                         }
                     }
