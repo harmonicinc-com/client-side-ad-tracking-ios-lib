@@ -159,9 +159,9 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
 
 10. Stop the ad tracker when it is not needed:
 
-        ```swift
-        adTracker?.stop()
-        ```
+    ```swift
+    adTracker?.stop()
+    ```
 
 [Back to TOC](#harmonicclientsideadtracking)
 
