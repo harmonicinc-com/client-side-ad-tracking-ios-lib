@@ -58,7 +58,7 @@ public class AdBeaconingSession: ObservableObject {
     @Published public internal(set) var logMessages: [LogMessage] = []
     
     @Published public internal(set) var isShowDebugOverlay = true
-    @Published public internal(set) var automaticallyPreservesTimeOffsetFromLive = false
+    @Published public var automaticallyPreservesTimeOffsetFromLive = false
     @Published public var playerControlIsFocused = false
     
     var latestPlayhead: Double = 0
