@@ -58,11 +58,16 @@ public class HarmonicAdTracker {
             let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl, playhead: playhead)
             await updateLatestInfo(using: adBeacon)
         } catch {
-            metadataUrl += "&start=\(Int(playhead))"
-            Utility.log("Last call to AdMetadataHelper.requestAdMetadata failed with error: \(error); try calling AdMetadataHelper.requestAdMetadata with start param: \(Utility.getFormattedString(from: playhead)) (the new url is: \(metadataUrl))",
-                        to: session, level: .info, with: Self.logger)
-            let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl, playhead: nil)
-            await updateLatestInfo(using: adBeacon)
+            if (session.metadataType == .full) {
+                metadataUrl += "&start=\(Int(playhead))"
+                Utility.log("Last call to AdMetadataHelper.requestAdMetadata failed with error: \(error); try calling AdMetadataHelper.requestAdMetadata with start param: \(Utility.getFormattedString(from: playhead)) (the new url is: \(metadataUrl))",
+                            to: session, level: .info, with: Self.logger)
+                let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl, playhead: nil)
+                await updateLatestInfo(using: adBeacon)
+            } else {
+                // When using MetadataType.latestOnly, do not request again with start query
+                throw error
+            }
         }
     }
     
@@ -85,7 +90,10 @@ public class HarmonicAdTracker {
     private func updatePods(_ newPods: [AdBreak]?) {
         if let newPods = newPods,
            let playhead = session.playerObserver.playhead {
-            session.adPods = AdMetadataHelper.mergePods(session.adPods, with: newPods, playhead: playhead)
+            session.adPods = AdMetadataHelper.mergePods(session.adPods,
+                                                        with: newPods,
+                                                        playhead: playhead,
+                                                        keepExisting: session.metadataType == .latestOnly)
         }
     }
     

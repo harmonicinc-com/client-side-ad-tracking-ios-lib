@@ -60,11 +60,28 @@ public class AdBeaconingSession: ObservableObject {
     @Published public internal(set) var isShowDebugOverlay = true
     @Published public var automaticallyPreservesTimeOffsetFromLive = false
     @Published public var playerControlIsFocused = false
+    @Published public var metadataType: MetadataType = .latestOnly {
+        didSet {
+            reload(with: sessionInfo.manifestUrl,
+                   isAutomaticallyPreservesTimeOffsetFromLive: automaticallyPreservesTimeOffsetFromLive)
+        }
+    }
     
     var latestPlayhead: Double = 0
     
     public init() {
         self.playerObserver.setSession(self)
+    }
+    
+    public func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
+        guard let url = URL(string: urlString) else { return }
+        
+        let interstitialController = AVPlayerInterstitialEventController(primaryPlayer: player)
+        interstitialController.cancelCurrentEvent(withResumptionOffset: .zero)
+        
+        let playerItem = AVPlayerItem(url: url)
+        playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
+        player.replaceCurrentItem(with: playerItem)
     }
     
 }

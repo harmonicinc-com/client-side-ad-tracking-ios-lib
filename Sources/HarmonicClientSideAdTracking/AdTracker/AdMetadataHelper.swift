@@ -43,11 +43,13 @@ struct AdMetadataHelper {
         return adBeacon
     }
     
-    static func mergePods(_ existingPods: [AdBreak], with newPods: [AdBreak], playhead: Double) -> [AdBreak] {
+    static func mergePods(_ existingPods: [AdBreak], with newPods: [AdBreak], playhead: Double, keepExisting: Bool) -> [AdBreak] {
         var existingPods = existingPods
-        existingPods.removeAll { pod in
-            (pod.startTime ?? 0) + (pod.duration ?? 0) + KEEP_PODS_FOR_MS < playhead &&
-            !newPods.contains(where: { $0.id == pod.id })
+        if !keepExisting {
+            existingPods.removeAll { pod in
+                (pod.startTime ?? 0) + (pod.duration ?? 0) + KEEP_PODS_FOR_MS < playhead &&
+                !newPods.contains(where: { $0.id == pod.id })
+            }
         }
         
         for pod in newPods {

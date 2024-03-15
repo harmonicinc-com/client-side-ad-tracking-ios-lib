@@ -34,28 +34,14 @@ public struct PlayerView: View {
             .frame(height: 360)
 #endif
             .onReceive(session.$automaticallyPreservesTimeOffsetFromLive, perform: { enabled in
-                reload(with: session.sessionInfo.manifestUrl,
-                       isAutomaticallyPreservesTimeOffsetFromLive: enabled)
+                session.reload(with: session.sessionInfo.manifestUrl,
+                               isAutomaticallyPreservesTimeOffsetFromLive: enabled)
+            })
+            .onReceive(session.$metadataType, perform: { _ in
+                session.reload(with: session.sessionInfo.manifestUrl,
+                               isAutomaticallyPreservesTimeOffsetFromLive: session.automaticallyPreservesTimeOffsetFromLive)
             })
         }
-    }
-}
-
-extension PlayerView {
-    private func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {
-        guard let url = URL(string: urlString) else { return }
-        
-        let interstitialController = AVPlayerInterstitialEventController(primaryPlayer: session.player)
-        interstitialController.cancelCurrentEvent(withResumptionOffset: .zero)
-        
-        session.player.pause()
-        
-        let playerItem = AVPlayerItem(url: url)
-        playerItem.automaticallyPreservesTimeOffsetFromLive = isAutomaticallyPreservesTimeOffsetFromLive
-        
-        // HMS-10699: Set a new player instead of using replaceCurrentItem(with:)
-        session.player = AVPlayer(playerItem: playerItem)
-        session.player.play()
     }
 }
 
