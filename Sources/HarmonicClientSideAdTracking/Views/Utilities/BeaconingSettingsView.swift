@@ -21,14 +21,14 @@ public struct BeaconingSettingsView: View {
             VStack {
                 HStack {
                     Text("Metadata Type")
-                    if #available(tvOS 17.0, *) {
+                    if #available(tvOS 16.0, *) {
                         Picker("Metadata Type", selection: $session.metadataType) {
                             ForEach(MetadataType.allCases) { type in
                                 Text(type.rawValue)
                             }
                         }
 #if os(tvOS)
-                        .pickerStyle(.menu)
+                        .pickerStyle(.navigationLink)
                         .frame(width: 360)
 #else
                         .pickerStyle(.segmented)
