@@ -48,7 +48,8 @@ public struct BeaconingSettingsView: View {
     }
 }
 
-#Preview {
-    BeaconingSettingsView(session: AdBeaconingSession())
+struct BeaconingSettingsView_Previews: PreviewProvider {
+    static var previews: some View {
+        BeaconingSettingsView(session: AdBeaconingSession())
+    }
 }
-
