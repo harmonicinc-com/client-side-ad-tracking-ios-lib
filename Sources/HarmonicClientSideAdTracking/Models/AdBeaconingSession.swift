@@ -28,6 +28,24 @@ public class AdBeaconingSession: ObservableObject {
             guard !mediaUrl.isEmpty else { return }
             Task {
                 var manifestUrl, adTrackingMetadataUrl: String
+
+                if isInitRequest {
+                    do {
+                        let initResponse = try await Utility.makeInitRequest(to: mediaUrl)
+                        sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
+                                                  mediaUrl: mediaUrl,
+                                                  manifestUrl: initResponse.manifestUrl,
+                                                  adTrackingMetadataUrl: initResponse.trackingUrl)
+                    } catch {
+                        Utility
+                            .log(
+                                "Failed to make POST request to \(mediaUrl) to initialise the session: \(error.localizedDescription)."
+                                + "Falling back to GET request.",
+                                to: self, level: .warning, with: Self.logger
+                            )
+                    }
+                }
+
                 do {
                     let (_, httpResponse) = try await Utility.makeRequest(to: mediaUrl)
                     
@@ -58,6 +76,12 @@ public class AdBeaconingSession: ObservableObject {
     @Published public internal(set) var logMessages: [LogMessage] = []
     
     @Published public internal(set) var isShowDebugOverlay = true
+    @Published public internal(set) var isInitRequest: Bool = true {
+        didSet {
+            let oldMediaUrl = mediaUrl
+            mediaUrl = oldMediaUrl
+        }
+    }
     @Published public var automaticallyPreservesTimeOffsetFromLive = false
     @Published public var playerControlIsFocused = false
     @Published public var metadataType: MetadataType = .latestOnly {

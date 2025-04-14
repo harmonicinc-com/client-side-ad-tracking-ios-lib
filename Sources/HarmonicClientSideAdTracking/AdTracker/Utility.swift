@@ -52,7 +52,29 @@ public struct Utility {
         }
         return (data, httpResponse)
     }
-    
+
+    static func makeInitRequest(to urlString: String) async throws -> InitResponse {
+        guard let url = URL(string: urlString) else {
+            let errorMessage = "Invalid URL: \(urlString)"
+            throw HarmonicAdTrackerError.networkError(errorMessage)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            let errorMessage = "Cannot cast URLResponse as HTTPURLResponse for URL: \(urlString)"
+            throw HarmonicAdTrackerError.networkError(errorMessage)
+        }
+        guard httpResponse.statusCode == 200 else {
+            let errorMessage = "Invalid response status: \(httpResponse.statusCode) for URL: \(urlString); The response is: \(String(data: data, encoding: .utf8) ?? "(nil)")"
+            throw HarmonicAdTrackerError.networkError(errorMessage)
+        }
+
+        return try JSONDecoder().decode(InitResponse.self, from: data)
+    }
+
     static func rewriteToMetadataUrl(from url: String) -> String {
         return url.replacingOccurrences(of: "\\/[^\\/?]+(\\??[^\\/]*)$",
                                         with: "/\(AD_TRACKING_METADATA_FILE_NAME)$1",
