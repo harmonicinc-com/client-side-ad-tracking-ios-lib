@@ -28,24 +28,46 @@ public class AdBeaconingSession: ObservableObject {
             guard !mediaUrl.isEmpty else { return }
             Task {
                 var manifestUrl, adTrackingMetadataUrl: String
-                do {
-                    let (_, httpResponse) = try await Utility.makeRequest(to: mediaUrl)
-                    
-                    if let redirectedUrl = httpResponse.url {
-                        manifestUrl = redirectedUrl.absoluteString
-                        adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: redirectedUrl.absoluteString)
-                    } else {
-                        manifestUrl = mediaUrl
-                        adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: mediaUrl)
+
+                if isInitRequest {
+                    do {
+                        let initResponse = try await Utility.makeInitRequest(to: mediaUrl)
+                        Utility.log("Parsed URLs from POST init request: \(initResponse.manifestUrl), \(initResponse.trackingUrl)",
+                                    to: self, level: .info, with: Self.logger)
+                        sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
+                                                  mediaUrl: mediaUrl,
+                                                  manifestUrl: initResponse.manifestUrl,
+                                                  adTrackingMetadataUrl: initResponse.trackingUrl)
+                    } catch {
+                        Utility
+                            .log(
+                                "Failed to make POST request to \(mediaUrl) to initialise the session: \(error.localizedDescription)."
+                                + "Falling back to GET request.",
+                                to: self, level: .warning, with: Self.logger
+                            )
                     }
-                    
-                    sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
-                                              mediaUrl: mediaUrl,
-                                              manifestUrl: manifestUrl,
-                                              adTrackingMetadataUrl: adTrackingMetadataUrl)
-                } catch {
-                    Utility.log("Failed to load media with URL: \(mediaUrl); Error: \(error)",
-                                to: self, level: .warning, with: Self.logger)                    
+                }
+                
+                if sessionInfo.manifestUrl.isEmpty || sessionInfo.adTrackingMetadataUrl.isEmpty {
+                    do {
+                        let (_, httpResponse) = try await Utility.makeRequest(to: mediaUrl)
+                        
+                        if let redirectedUrl = httpResponse.url {
+                            manifestUrl = redirectedUrl.absoluteString
+                            adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: redirectedUrl.absoluteString)
+                        } else {
+                            manifestUrl = mediaUrl
+                            adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: mediaUrl)
+                        }
+                        
+                        sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
+                                                  mediaUrl: mediaUrl,
+                                                  manifestUrl: manifestUrl,
+                                                  adTrackingMetadataUrl: adTrackingMetadataUrl)
+                    } catch {
+                        Utility.log("Failed to load media with URL: \(mediaUrl); Error: \(error)",
+                                    to: self, level: .warning, with: Self.logger)
+                    }
                 }
             }
         }
@@ -58,6 +80,12 @@ public class AdBeaconingSession: ObservableObject {
     @Published public internal(set) var logMessages: [LogMessage] = []
     
     @Published public internal(set) var isShowDebugOverlay = true
+    @Published public internal(set) var isInitRequest: Bool = true {
+        didSet {
+            let oldMediaUrl = mediaUrl
+            mediaUrl = oldMediaUrl
+        }
+    }
     @Published public var automaticallyPreservesTimeOffsetFromLive = false
     @Published public var playerControlIsFocused = false
     @Published public var metadataType: MetadataType = .latestOnly {
