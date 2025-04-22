@@ -80,8 +80,9 @@ public class AdBeaconingSession: ObservableObject {
     @Published public internal(set) var logMessages: [LogMessage] = []
     
     @Published public internal(set) var isShowDebugOverlay = true
-    @Published public internal(set) var isInitRequest: Bool = true {
+    @Published public var isInitRequest: Bool = true {
         didSet {
+            // Trigger reload using either POST or GET to init session
             let oldMediaUrl = mediaUrl
             mediaUrl = oldMediaUrl
         }
