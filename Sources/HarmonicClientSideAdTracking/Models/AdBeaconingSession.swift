@@ -29,6 +29,7 @@ public class AdBeaconingSession: ObservableObject {
             Task {
                 var manifestUrl, adTrackingMetadataUrl: String
 
+                var isInitRequestSucceeded = false
                 if isInitRequest {
                     do {
                         let initResponse = try await Utility.makeInitRequest(to: mediaUrl)
@@ -38,6 +39,7 @@ public class AdBeaconingSession: ObservableObject {
                                                   mediaUrl: mediaUrl,
                                                   manifestUrl: initResponse.manifestUrl,
                                                   adTrackingMetadataUrl: initResponse.trackingUrl)
+                        isInitRequestSucceeded = true
                     } catch {
                         Utility
                             .log(
@@ -48,7 +50,7 @@ public class AdBeaconingSession: ObservableObject {
                     }
                 }
                 
-                if sessionInfo.manifestUrl.isEmpty || sessionInfo.adTrackingMetadataUrl.isEmpty {
+                if !isInitRequest || (isInitRequest && !isInitRequestSucceeded) {
                     do {
                         let (_, httpResponse) = try await Utility.makeRequest(to: mediaUrl)
                         
