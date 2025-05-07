@@ -2,16 +2,19 @@
 
 A library for sending ad beacons from the client-side. Works with both traditional SSAI and HLS interstitials. Compatible with iOS/tvOS 15 and above.
 
--   [Installation](#installation)
--   [Usage](#usage)
--   [Minimal working examples](#minimal-working-examples)
-    -   [SwiftUI](#swiftui)
-    -   [UIKit](#uikit)
--   [Main SwiftUI views](#main-swiftui-views)
-    -   [`AdPodListView`](#adpodlistview)
-    -   [`SessionView`](#sessionview)
-    -   [`PlayerView`](#playerview)
--   [Demo app](#demo-app)
+- [HarmonicClientSideAdTracking](#harmonicclientsideadtracking)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Minimal working examples](#minimal-working-examples)
+    - [SwiftUI](#swiftui)
+    - [UIKit](#uikit)
+  - [Main SwiftUI views](#main-swiftui-views)
+    - [`AdPodListView`](#adpodlistview)
+    - [`SessionView`](#sessionview)
+    - [`PlayerView`](#playerview)
+  - [Demo app](#demo-app)
+  - [Appendix](#appendix)
+    - [How the Playback URL and Beaconing URL are Obtained by the Library](#how-the-playback-url-and-beaconing-url-are-obtained-by-the-library)
 
 ## Installation
 
@@ -291,3 +294,33 @@ Contains a [`VideoPlayer`](https://developer.apple.com/documentation/avkit/video
 A demo app (that can be run on both iOS and tvOS) on how this library (including the SwiftUI views) may be used is available at the following repository: https://github.com/harmonicinc-com/client-side-ad-tracking-ios
 
 [Back to TOC](#harmonicclientsideadtracking)
+
+## Appendix
+
+### How the Playback URL and Beaconing URL are Obtained by the Library
+
+> [!NOTE]  
+> Applicable when `isInitRequest` in `AdBeaconingSession` is `true` (default is true).
+
+1. The library sends a POST request to the manifest endpoint. For e.g., a POST request is sent to:
+    ```
+    https://my-host/variant/v1/hls/index.m3u8
+    ```
+
+2. The ad insertion service (PMM) responds with the URLs. For e.g.,
+    ```
+    {
+        "manifestUrl": "/variant/v1/index.m3u8?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed",
+        "trackingUrl": "/variant/v1/hls/metadata?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed"
+    }
+    ```
+
+3. The library constructs the URLs by combining the host in the original URL and the relative URLs obtained. For e.g.,
+    ```
+    Manifest URL: https://my-host/variant/v1/hls/index.m3u8?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed
+
+    Metadata URL: https://my-host/variant/v1/hls/metadata?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed
+    ```
+
+> [!NOTE]  
+> You may obtain these URLs from the `sessionInfo` property of your `AdBeaconingSession`.
