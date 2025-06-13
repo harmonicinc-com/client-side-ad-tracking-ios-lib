@@ -310,8 +310,8 @@ A demo app (that can be run on both iOS and tvOS) on how this library (including
 2. The ad insertion service (PMM) responds with the URLs. For e.g.,
     ```
     {
-        "manifestUrl": "/variant/v1/index.m3u8?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed",
-        "trackingUrl": "/variant/v1/hls/metadata?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed"
+        "manifestUrl": "./index.m3u8?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed",
+        "trackingUrl": "./metadata?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed"
     }
     ```
 
