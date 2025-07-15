@@ -21,7 +21,7 @@ public struct ToggleView: View {
             VStack {
                 Toggle("Debug Overlay", isOn: $session.isShowDebugOverlay)
                 Toggle("Automatically Preserves Time Offset From Live", isOn: $session.automaticallyPreservesTimeOffsetFromLive)
-                Toggle("POST Request to Initialise Session", isOn: $session.isInitRequest)
+                Toggle("Use Session Init API", isOn: $session.isInitRequest)
             }
             .padding(.trailing, 10)
         }

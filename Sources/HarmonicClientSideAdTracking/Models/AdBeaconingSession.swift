@@ -33,7 +33,7 @@ public class AdBeaconingSession: ObservableObject {
                 if isInitRequest {
                     do {
                         let initResponse = try await Utility.makeInitRequest(to: mediaUrl)
-                        Utility.log("Parsed URLs from POST init request: \(initResponse.manifestUrl), \(initResponse.trackingUrl)",
+                        Utility.log("Parsed URLs from session init request: \(initResponse.manifestUrl), \(initResponse.trackingUrl)",
                                     to: self, level: .info, with: Self.logger)
                         sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
                                                   mediaUrl: mediaUrl,
@@ -43,8 +43,8 @@ public class AdBeaconingSession: ObservableObject {
                     } catch {
                         Utility
                             .log(
-                                "Failed to make POST request to \(mediaUrl) to initialise the session: \(error.localizedDescription)."
-                                + "Falling back to GET request.",
+                                "Failed to make request to \(mediaUrl) to initialise the session: \(error.localizedDescription)."
+                                + "Falling back to redirect/parsing manifest.",
                                 to: self, level: .warning, with: Self.logger
                             )
                     }
@@ -52,14 +52,34 @@ public class AdBeaconingSession: ObservableObject {
                 
                 if !isInitRequest || (isInitRequest && !isInitRequestSucceeded) {
                     do {
-                        let (_, httpResponse) = try await Utility.makeRequest(to: mediaUrl)
+                        let (data, httpResponse) = try await Utility.makeRequest(to: mediaUrl)
                         
-                        if let redirectedUrl = httpResponse.url {
+                        let redirectStatusCodes = [301, 302]
+                        if let redirectedUrl = httpResponse.url, redirectStatusCodes.contains(httpResponse.statusCode) {
                             manifestUrl = redirectedUrl.absoluteString
                             adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: redirectedUrl.absoluteString)
                         } else {
-                            manifestUrl = mediaUrl
-                            adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: mediaUrl)
+                            // No redirect occurred, parse the HLS master playlist
+                            guard let originalUrl = URL(string: mediaUrl) else {
+                                manifestUrl = mediaUrl
+                                adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: mediaUrl)
+                                Utility.log("Failed to create URL from mediaUrl: \(mediaUrl)", 
+                                           to: self, level: .warning, with: Self.logger)
+                                return
+                            }
+                            
+                            if let firstMediaPlaylistUrl = Utility.parseHLSMasterPlaylist(data, baseURL: originalUrl) {
+                                manifestUrl = firstMediaPlaylistUrl
+                                adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: firstMediaPlaylistUrl)
+                                Utility.log("Parsed first media playlist URL from HLS master: \(firstMediaPlaylistUrl)", 
+                                           to: self, level: .info, with: Self.logger)
+                            } else {
+                                // Fallback to original URL if parsing fails
+                                manifestUrl = mediaUrl
+                                adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: mediaUrl)
+                                Utility.log("Failed to parse HLS master playlist, using original URL: \(mediaUrl)", 
+                                           to: self, level: .warning, with: Self.logger)
+                            }
                         }
                         
                         sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),

@@ -302,24 +302,24 @@ A demo app (that can be run on both iOS and tvOS) on how this library (including
 > [!NOTE]  
 > Applicable when `isInitRequest` in `AdBeaconingSession` is `true` (default is true).
 
-1. The library sends a POST request to the manifest endpoint. For e.g., a POST request is sent to:
+1. The library sends a GET request to the manifest endpoint with the query param "initSession=true". For e.g., a GET request is sent to:
     ```
-    https://my-host/variant/v1/hls/index.m3u8
+    https://my-host/variant/v1/hls/index.m3u8?initSession=true
     ```
 
 2. The ad insertion service (PMM) responds with the URLs. For e.g.,
     ```
     {
-        "manifestUrl": "./index.m3u8?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed",
-        "trackingUrl": "./metadata?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed"
+        "manifestUrl": "./index.m3u8?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed&vosad_inst_id=pmm-0",
+        "trackingUrl": "./metadata?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed&vosad_inst_id=pmm-0"
     }
     ```
 
 3. The library constructs the URLs by combining the host in the original URL and the relative URLs obtained. For e.g.,
     ```
-    Manifest URL: https://my-host/variant/v1/hls/index.m3u8?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed
+    Manifest URL: https://my-host/variant/v1/hls/index.m3u8?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed&vosad_inst_id=pmm-0
 
-    Metadata URL: https://my-host/variant/v1/hls/metadata?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed
+    Metadata URL: https://my-host/variant/v1/hls/metadata?sessid=a700d638-a4e8-49cd-b288-6809bd35a3ed&vosad_inst_id=pmm-0
     ```
 
 > [!NOTE]  
