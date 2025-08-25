@@ -17,6 +17,12 @@ public class AdBeaconingSession: ObservableObject {
     )
     
     public var player = AVPlayer() {
+        willSet {
+            // Clean up observations on the old player before setting new one
+            Task { @MainActor in
+                playerObserver.resetObservations()
+            }
+        }
         didSet {
             playerObserver.setSession(self)
         }
@@ -122,6 +128,25 @@ public class AdBeaconingSession: ObservableObject {
     
     public init() {
         self.playerObserver.setSession(self)
+    }
+    
+    deinit {
+        // Clean up player observations to prevent memory leaks
+        // Note: resetObservations will be called asynchronously but the cleanup will happen
+        let playerObserver = self.playerObserver
+        let player = self.player
+        Task { @MainActor in
+            playerObserver.resetObservations()
+            
+            // Clear the player's current item
+            player.replaceCurrentItem(with: nil)
+        }
+    }
+    
+    /// Call this method before setting the session to nil for immediate cleanup
+    public func cleanup() {
+        playerObserver.resetObservations()
+        player.replaceCurrentItem(with: nil)
     }
     
     public func reload(with urlString: String, isAutomaticallyPreservesTimeOffsetFromLive: Bool) {

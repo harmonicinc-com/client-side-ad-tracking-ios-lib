@@ -67,14 +67,29 @@ public class PlayerObserver: ObservableObject {
         setInterstitialPlayheadObservation(interstitialMonitor)
     }
     
-    private func resetObservations() {
+    public func resetObservations() {
         currentDateTimer?.cancel()
+        
+        // Remove time observers before setting to nil
+        if let observer = primaryPlayheadObservation {
+            session?.player.removeTimeObserver(observer)
+        }
         primaryPlayheadObservation = nil
+        
+        if let observer = interstitialPlayheadObservation,
+           let player = interstitialPlayer {
+            player.removeTimeObserver(observer)
+        }
+        interstitialPlayheadObservation = nil
+        
         primaryPlayerStatusObservation?.cancel()
-        interstitialPlayheadObservation  = nil
         interstitialEventsObservation?.cancel()
         currentInterstitialEventObservation?.cancel()
         interstitialPlayerStatusObservation?.cancel()
+        
+        // Clear references
+        interstitialPlayer = nil
+        currentInterstitialItems = []
     }
     
     private func setCurrentDateTimer() {

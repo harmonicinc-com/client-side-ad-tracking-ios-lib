@@ -166,6 +166,15 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
     adTracker?.stop()
     ```
 
+11. (Optional) Manually cleanup the session before setting it to nil to ensure immediate memory cleanup:
+
+    ```swift
+    mySession.cleanup()
+    mySession = nil  // or set to a new session
+    ```
+
+    -   Note: This step is optional as the session will automatically cleanup when deallocated, but calling `cleanup()` explicitly ensures immediate cleanup of player observers and prevents potential memory leaks.
+
 [Back to TOC](#harmonicclientsideadtracking)
 
 ## Minimal working examples
