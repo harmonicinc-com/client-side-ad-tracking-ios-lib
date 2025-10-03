@@ -27,7 +27,7 @@ struct AdView: View {
     }
     
     var body: some View {
-        ExpandableListView("Ad: \(ad.id ?? "nil")", isExpanded: $expandAd, {
+        ExpandableListView("Ad: \(ad.id ?? "nil"); Duration: \((ad.duration ?? 0)/1_000)s", isExpanded: $expandAd, {
             ForEach(ad.trackingEvents, id: \.event) { trackingEvent in
 #if os(iOS)
                 TrackingEventView(trackingEvent: trackingEvent)

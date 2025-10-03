@@ -30,7 +30,7 @@ struct TrackingEventView: View {
                 .resizable()
                 .frame(width: 30, height: 30)
             VStack(alignment: .leading) {
-                Text("Event: \((trackingEvent.event ?? .unknown).rawValue)")
+                Text("Event: \((trackingEvent.event ?? .unknown).rawValue); Duration: \((trackingEvent.duration ?? 0)/1_000)s")
                     .bold()
                     .font(.caption)
                 ForEach(trackingEvent.signalingUrls, id: \.self) { url in

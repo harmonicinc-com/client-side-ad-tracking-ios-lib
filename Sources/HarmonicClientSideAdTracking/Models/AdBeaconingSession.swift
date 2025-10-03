@@ -117,12 +117,8 @@ public class AdBeaconingSession: ObservableObject {
     }
     @Published public var automaticallyPreservesTimeOffsetFromLive = false
     @Published public var playerControlIsFocused = false
-    @Published public var metadataType: MetadataType = .latestOnly {
-        didSet {
-            reload(with: sessionInfo.manifestUrl,
-                   isAutomaticallyPreservesTimeOffsetFromLive: automaticallyPreservesTimeOffsetFromLive)
-        }
-    }
+    @Published public var metadataType: MetadataType = .latestOnly // Setting is deprecated
+    @Published public var keepPodsForMs: Double =  1_000 * 60 * 60 * 2   // 2 hours
     
     var latestPlayhead: Double = 0
     

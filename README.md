@@ -40,14 +40,19 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
     let mySession = AdBeaconingSession()
     ```
 
-3.  Optionally, set the session's player to your own instance of AVPlayer:
+3.  Optionally, confgure the following options in your session:
+    ```swift
+    mySession.keepPodsForMs = 1_000 * 60 * 60 * 2  // Double: duration to cache ad metadata, defaults to 2 hours
+    ```
+
+4.  Optionally, set the session's player to your own instance of AVPlayer:
 
     ```swift
     let myAVPlayer = AVPlayer()
     mySession.player = myAVPlayer
     ```
 
-4.  Set the session's media URL to the master playlist of an HLS stream:
+5.  Set the session's media URL to the master playlist of an HLS stream:
 
     ```swift
     mySession.mediaUrl = "<hls-master-playlist-url>"
@@ -57,7 +62,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         -   Try to obtain a manifest URL with a session ID (if the provided `mediaUrl` doesn't already contain one);
         -   Try to obtain the corresponding metadata URL with the session ID.
 
-5.  Observe the session's `manifestUrl` by using the [`.onReceive(_:perform:)`](<https://developer.apple.com/documentation/swiftui/view/onreceive(_:perform:)>) method in SwiftUI (for UIKit, please see the [example](#uikit) below). When it is set and not empty, create an `AVPlayerItem` with the URL and set it in the player:
+6.  Observe the session's `manifestUrl` by using the [`.onReceive(_:perform:)`](<https://developer.apple.com/documentation/swiftui/view/onreceive(_:perform:)>) method in SwiftUI (for UIKit, please see the [example](#uikit) below). When it is set and not empty, create an `AVPlayerItem` with the URL and set it in the player:
 
     ```swift
     if !manifestUrl.isEmpty {
@@ -66,26 +71,26 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
     }
     ```
 
-6.  Create a [`HarmonicAdTracker`](Sources/HarmonicClientSideAdTracking/AdTracker/HarmonicAdTracker.swift) object and initialize it with the session created above:
+7.  Create a [`HarmonicAdTracker`](Sources/HarmonicClientSideAdTracking/AdTracker/HarmonicAdTracker.swift) object and initialize it with the session created above:
 
     ```swift
     let adTracker: HarmonicAdTracker?
     adTracker = HarmonicAdTracker(session: mySession)
     ```
 
-7.  Start the ad tracker:
+8.  Start the ad tracker:
 
     ```swift
     adTracker?.start()
     ```
 
-8.  Start playing and beacons will be sent when ads are played:
+9.  Start playing and beacons will be sent when ads are played:
 
     ```swift
     mySession.player.play()
     ```
 
-9.  You may observe the following information from the session instance:
+10. You may observe the following information from the session instance:
 
     -   To get the URLs with the session ID:
         ```swift
@@ -160,13 +165,13 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         logMessages[0].isError                      // Bool
         ```
 
-10. Stop the ad tracker when it is not needed:
+11. Stop the ad tracker when it is not needed:
 
     ```swift
     adTracker?.stop()
     ```
 
-11. (Optional) Manually cleanup the session before setting it to nil to ensure immediate memory cleanup:
+12. (Optional) Manually cleanup the session before setting it to nil to ensure immediate memory cleanup:
 
     ```swift
     mySession.cleanup()

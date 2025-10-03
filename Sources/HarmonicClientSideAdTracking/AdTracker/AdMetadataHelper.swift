@@ -9,7 +9,6 @@ import Foundation
 import Combine
 
 struct AdMetadataHelper {
-    private static let KEEP_PODS_FOR_MS: Double = 1_000 * 60 * 2   // 2 minutes
     private static let EARLY_FETCH_MS: Double = 5_000
     
     private static let decoder: JSONDecoder = {
@@ -18,7 +17,7 @@ struct AdMetadataHelper {
         return decoder
     }()
     
-    static func requestAdMetadata(with metadataUrl: String, playhead: Double?) async throws -> AdBeacon {
+    static func requestAdMetadata(with metadataUrl: String) async throws -> AdBeacon {
         guard !metadataUrl.isEmpty else {
             throw HarmonicAdTrackerError.metadataError("The metadata URL is empty.")
         }
@@ -32,24 +31,14 @@ struct AdMetadataHelper {
             throw HarmonicAdTrackerError.metadataError("No DataRange returned in metadata.")
         }
         
-        let adPodIDs = adBeacon.adBreaks.map { $0.id ?? "nil" }
-        
-        if let playhead = playhead {
-            guard Utility.timeIsIn(latestDataRange, for: playhead, endOffset: EARLY_FETCH_MS) else {
-                throw HarmonicAdTrackerError.metadataError("Invalid metadata (with ad pods: \(adPodIDs)): Time (\(Utility.getFormattedString(from: playhead))) is not in \(latestDataRange))")
-            }
-        }
-        
         return adBeacon
     }
     
-    static func mergePods(_ existingPods: [AdBreak], with newPods: [AdBreak], playhead: Double, keepExisting: Bool) -> [AdBreak] {
+    static func mergePods(_ existingPods: [AdBreak], with newPods: [AdBreak], playhead: Double, keepPodsForMs: Double) -> [AdBreak] {
         var existingPods = existingPods
-        if !keepExisting {
-            existingPods.removeAll { pod in
-                (pod.startTime ?? 0) + (pod.duration ?? 0) + KEEP_PODS_FOR_MS < playhead &&
-                !newPods.contains(where: { $0.id == pod.id })
-            }
+        existingPods.removeAll { pod in
+            (pod.startTime ?? 0) + (pod.duration ?? 0) + keepPodsForMs < playhead &&
+            !newPods.contains(where: { $0.id == pod.id })
         }
         
         for pod in newPods {

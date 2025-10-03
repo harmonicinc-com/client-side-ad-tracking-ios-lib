@@ -16,7 +16,7 @@ struct AdBreakView: View {
     @State private var expandAdBreak = true
     
     var body: some View {
-        ExpandableListView("Ad Break: \(adBreak.id ?? "nil")", isExpanded: $expandAdBreak, {
+        ExpandableListView("Ad Break: \(adBreak.id ?? "nil"); Duration: \((adBreak.duration ?? 0)/1_000)s", isExpanded: $expandAdBreak, {
             ForEach(adBreak.ads) { ad in
                 AdView(session: session, ad: ad, adBreakId: adBreak.id)
             }

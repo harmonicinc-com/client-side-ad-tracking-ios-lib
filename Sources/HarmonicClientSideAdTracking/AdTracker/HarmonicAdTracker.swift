@@ -51,24 +51,12 @@ public class HarmonicAdTracker {
             throw HarmonicAdTrackerError.metadataError("Playhead is nil.")
         }
         
-        var metadataUrl = session.sessionInfo.adTrackingMetadataUrl
+        let metadataUrl = session.sessionInfo.adTrackingMetadataUrl
         Utility.log("Try calling AdMetadataHelper.requestAdMetadata (latest playhead is \(Utility.getFormattedString(from: playhead)))",
                     to: session, level: .debug, with: Self.logger)
-        do {
-            let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl, playhead: playhead)
-            await updateLatestInfo(using: adBeacon)
-        } catch {
-            if (session.metadataType == .full) {
-                metadataUrl += "&start=\(Int(playhead))"
-                Utility.log("Last call to AdMetadataHelper.requestAdMetadata failed with error: \(error); try calling AdMetadataHelper.requestAdMetadata with start param: \(Utility.getFormattedString(from: playhead)) (the new url is: \(metadataUrl))",
-                            to: session, level: .info, with: Self.logger)
-                let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl, playhead: nil)
-                await updateLatestInfo(using: adBeacon)
-            } else {
-                // When using MetadataType.latestOnly, do not request again with start query
-                throw error
-            }
-        }
+
+        let adBeacon = try await AdMetadataHelper.requestAdMetadata(with: metadataUrl)
+        await updateLatestInfo(using: adBeacon)
     }
     
     private func updateLatestInfo(using adBeacon: AdBeacon) async {
@@ -90,10 +78,7 @@ public class HarmonicAdTracker {
     private func updatePods(_ newPods: [AdBreak]?) {
         if let newPods = newPods,
            let playhead = session.playerObserver.playhead {
-            session.adPods = AdMetadataHelper.mergePods(session.adPods,
-                                                        with: newPods,
-                                                        playhead: playhead,
-                                                        keepExisting: session.metadataType == .latestOnly)
+            session.adPods = AdMetadataHelper.mergePods(session.adPods, with: newPods, playhead: playhead, keepPodsForMs: session.keepPodsForMs)
         }
     }
     
@@ -133,17 +118,9 @@ public class HarmonicAdTracker {
                                                  endTolerance: AD_END_TOLERANCE_FOR_TIMEJUMP_RESET),
                    abs(lastPlayhead.timeIntervalSince(currentPlayhead)) > RESET_AD_PODS_IF_TIMEJUMP_EXCEEDS {
                     let adPodIDs = self.session.adPods.map { $0.id ?? "nil" }
-                    Utility.log("Detected time jump (current playhead: \(Utility.getFormattedString(from: currentPlayhead)) (last playhead: \(Utility.getFormattedString(from: lastPlayhead))), resetting ad pods (\(adPodIDs))",
+                    Utility.log("Detected time jump (current playhead: \(Utility.getFormattedString(from: currentPlayhead)) (last playhead: \(Utility.getFormattedString(from: lastPlayhead))); Current ad pods (\(adPodIDs))",
                                 to: self.session, level: .debug, with: Self.logger)
-                    Task {
-                        self.resetAdPods()
-                        do {
-                            try await self.tryRefreshMetadata()
-                        } catch {
-                            Utility.log("tryRefreshMetadata failed: \(error)",
-                                        to: self.session, level: .warning, with: Self.logger)
-                        }
-                    }
+                    // Not resetting ad pods to preserve beacons' fired states
                 }
             })
     }

@@ -37,10 +37,6 @@ public struct PlayerView: View {
                 session.reload(with: session.sessionInfo.manifestUrl,
                                isAutomaticallyPreservesTimeOffsetFromLive: enabled)
             })
-            .onReceive(session.$metadataType, perform: { _ in
-                session.reload(with: session.sessionInfo.manifestUrl,
-                               isAutomaticallyPreservesTimeOffsetFromLive: session.automaticallyPreservesTimeOffsetFromLive)
-            })
         }
     }
 }
