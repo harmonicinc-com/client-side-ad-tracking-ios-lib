@@ -12,6 +12,8 @@ A library for sending ad beacons from the client-side. Works with both tradition
   - [Minimal working examples](#minimal-working-examples)
     - [SwiftUI](#swiftui)
     - [UIKit](#uikit)
+  - [More Examples](#more-examples)
+    - [Custom Player with Ad Pods Observation](#custom-player-with-ad-pods-observation)
   - [Main SwiftUI views](#main-swiftui-views)
     - [`AdPodListView`](#adpodlistview)
     - [`SessionView`](#sessionview)
@@ -406,6 +408,65 @@ class ViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         adTracker?.stop()
+    }
+}
+```
+
+## More Examples
+
+### Custom Player with Ad Pods Observation 
+
+This example demonstrates using your own `AVPlayer` instance instead of the session's default player, observing ad pods from the metadata API to print their IDs, and adding a custom overlay on top of the video player.
+
+```swift
+import SwiftUI
+import AVKit
+import HarmonicClientSideAdTracking
+
+struct CustomPlayerView: View {
+    @StateObject private var mySession = AdBeaconingSession()
+    @State private var adTracker: HarmonicAdTracker?
+    @State private var customPlayer = AVPlayer()
+
+    var body: some View {
+        VideoPlayer(player: customPlayer, videoOverlay: {
+            CustomOverlay()
+        })
+        .onAppear {
+            mySession.player = customPlayer
+            mySession.mediaUrl = "<hls-master-playlist-url>"
+            adTracker = HarmonicAdTracker(session: mySession)
+        }
+        .onReceive(mySession.sessionInfo.$manifestUrl) { manifestUrl in
+            if !manifestUrl.isEmpty {
+                let playerItem = AVPlayerItem(url: URL(string: manifestUrl)!)
+                customPlayer.replaceCurrentItem(with: playerItem)
+                customPlayer.play()
+                adTracker?.start()
+            }
+        }
+        .onReceive(mySession.$adPods) { adPods in
+            for adPod in adPods {
+                print("Ad Pod ID: \(adPod.id)")
+            }
+        }
+        .onDisappear {
+            customPlayer.replaceCurrentItem(with: nil)
+            adTracker?.stop()
+            mySession.cleanup()
+        }
+    }
+}
+
+struct CustomOverlay: View {
+    var body: some View {
+        VStack {
+            Spacer()
+            Text("Custom Overlay")
+                .padding()
+                .background(Color.black.opacity(0.7))
+                .foregroundColor(.white)
+        }
     }
 }
 ```
