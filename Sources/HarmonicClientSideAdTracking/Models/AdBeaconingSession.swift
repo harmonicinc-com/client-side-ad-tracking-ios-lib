@@ -9,6 +9,8 @@ import AVFoundation
 import Combine
 import os
 
+private let METADATA_UPDATE_INTERVAL: TimeInterval = 4
+
 @MainActor
 public class AdBeaconingSession: ObservableObject {
     private static let logger = Logger(
@@ -119,6 +121,7 @@ public class AdBeaconingSession: ObservableObject {
     @Published public var playerControlIsFocused = false
     @Published public var metadataType: MetadataType = .latestOnly // Setting is deprecated
     @Published public var keepPodsForMs: Double =  1_000 * 60 * 60 * 2   // 2 hours
+    @Published public var metadataUpdateInterval: TimeInterval = 4 // 4 seconds
     
     var latestPlayhead: Double = 0
     

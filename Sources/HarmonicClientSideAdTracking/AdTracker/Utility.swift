@@ -120,11 +120,6 @@ public struct Utility {
                                         options: .regularExpression)
     }
     
-    static func timeIsIn(_ range: DataRange, for time: Double, endOffset: Double) -> Bool {
-        guard let start = range.start, let end = range.end else { return false }
-        return start...(end - endOffset) ~= time
-    }
-    
     static func playheadIsIncludedIn(_ adPods: [AdBreak], for playhead: Double, startTolerance: Double, endTolerance: Double) -> Bool {
         for adPod in adPods {
             if let start = adPod.startTime, let duration = adPod.duration {
@@ -136,20 +131,6 @@ public struct Utility {
             }
         }
         
-        return false
-    }
-    
-    static func trackingEventIsIn(_ ranges: [DataRange], for trackingEvent: TrackingEvent, with endTolerance: Double) -> Bool {
-        guard let startTime = trackingEvent.startTime,
-              let duration = trackingEvent.duration else {
-            return false
-        }
-        let trackingEventRange = DataRange(start: startTime, end: startTime + max(duration + endTolerance, endTolerance))
-        for range in ranges {
-            if trackingEventRange.overlaps(range) {
-                return true
-            }
-        }
         return false
     }
     

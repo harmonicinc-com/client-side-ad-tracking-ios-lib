@@ -43,6 +43,7 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
 3.  Optionally, confgure the following options in your session:
     ```swift
     mySession.keepPodsForMs = 1_000 * 60 * 60 * 2  // Double: duration to cache ad metadata, defaults to 2 hours
+    mySession.metadataUpdateInterval = 4 // TimeInterval: how often to fetch the ad metadata, defaults to 4 seconds
     ```
 
 4.  Optionally, set the session's player to your own instance of AVPlayer:

@@ -24,7 +24,7 @@ class BeaconSender {
     )
     
     private let session: AdBeaconingSession
-    private let playedRangeChecker: PlayedRangeChecker
+    private let playedRangeTracker: PlayedRangeTracker
 
     private var lastPlayheadChecked: Double = 0
     private var lastPlayheadCheckTime: Double = 0
@@ -34,22 +34,23 @@ class BeaconSender {
     
     init(session: AdBeaconingSession) {
         self.session = session
-        self.playedRangeChecker = PlayedRangeChecker(session: session)
+        self.playedRangeTracker = PlayedRangeTracker(session: session)
     }
     
     func start() {
         setCheckNeedSendBeaconTimer()
-        playedRangeChecker.start()
+        playedRangeTracker.start()
     }
     
     func stop() {
         checkNeedSendBeaconTimer?.cancel()
-        playedRangeChecker.stop()
+        playedRangeTracker.stop()
     }
     
     func checkNeedSendBeaconsForPlayedRange() async {
-        let timeRangesToCheck = getIntersectionsWithLastDataRange()
-        Utility.log("timeRangesToCheck for played ranges: \(timeRangesToCheck)",
+        guard let playhead = session.playerObserver.playhead else { return }
+        
+        Utility.log("Checking played ranges for late beacons: \(playedRangeTracker.getRanges())",
                     to: session, level: .debug, with: Self.logger)
         
         await withTaskGroup(of: Void.self, body: { group in
@@ -60,18 +61,24 @@ class BeaconSender {
                             return
                         }
                         
-                        if reportingState == .idle
-                            && Utility.trackingEventIsIn(timeRangesToCheck, for: trackingEvent, with: MAX_TOLERANCE_EVENT_END_TIME) {
-                            group.addTask {
-                                await self.sendBeacon(trackingEvent)
+                        if reportingState == .idle {
+                            // Check if the tracking event time was played
+                            if let eventTime = trackingEvent.startTime,
+                               playedRangeTracker.wasTimePlayed(eventTime) {
+                                group.addTask {
+                                    await self.sendBeacon(trackingEvent)
+                                }
+                                Utility.log("Sending beacon for missed event: \(trackingEvent.signalingUrls)",
+                                            to: session, level: .debug, with: Self.logger)
                             }
-                            Utility.log("Sending beacon for missed event: \(trackingEvent.signalingUrls)",
-                                        to: session, level: .debug, with: Self.logger)
                         }
                     }
                 }
             }
         })
+        
+        // Clean up old ranges
+        playedRangeTracker.cleanupOldRanges(currentPosition: playhead, retentionMs: session.keepPodsForMs)
     }
     
     private func setCheckNeedSendBeaconTimer() {
@@ -82,7 +89,6 @@ class BeaconSender {
                 guard let playhead = self.session.playerObserver.playhead else { return }
                 
                 self.shouldCheckBeacon = self.shouldCheckBeaconForInterstitials(playhead: playhead)
-                self.playedRangeChecker.setShouldCheckBeacon(self.shouldCheckBeacon)
                 
                 Task {
                     if self.shouldCheckBeacon {
@@ -236,34 +242,6 @@ class BeaconSender {
             Utility.log("Failed to send beacon; unexpected error: \(error)", to: session, level: .error, with: Self.logger)
             trackingEvent.reportingState = .failed
         }
-    }
-    
-    private func getIntersectionsWithLastDataRange() -> [DataRange] {
-        guard let lastDataRange = session.latestDataRange,
-              let lastStart = lastDataRange.start,
-              let lastEnd = lastDataRange.end else {
-            return []
-        }
-        
-        var intersections: [DataRange] = []
-        
-        for playedDataRange in session.playedTimeOutsideDataRange {
-            guard let start = playedDataRange.start,
-                  let end = playedDataRange.end else { continue }
-            guard playedDataRange.overlaps(lastDataRange) else { continue }
-            
-            if playedDataRange.isWithin(lastDataRange) {
-                intersections.append(playedDataRange)
-                session.playedTimeOutsideDataRange.removeAll(where: { $0 == playedDataRange })
-            } else {
-                let intersection = DataRange(start: max(start, lastStart), end: min(end, lastEnd))
-                intersections.append(intersection)
-                playedDataRange.start = intersection.contains(start) ? intersection.end! : start
-                playedDataRange.end = intersection.contains(end) ? intersection.start! : end
-            }
-        }
-        
-        return intersections
     }
     
 }

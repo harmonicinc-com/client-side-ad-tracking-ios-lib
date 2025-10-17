@@ -9,8 +9,6 @@ import AVFoundation
 import Combine
 import os
 
-private let METADATA_UPDATE_INTERVAL: TimeInterval = 4
-
 private let RESET_AD_PODS_IF_TIMEJUMP_EXCEEDS: TimeInterval = 60
 private let AD_START_TOLERANCE_FOR_TIMEJUMP_RESET: Double = 4_000
 private let AD_END_TOLERANCE_FOR_TIMEJUMP_RESET: Double = 500
@@ -34,7 +32,7 @@ public class HarmonicAdTracker {
     }
     
     public func start() {
-        setRefreshMetadataTimer()
+        setRefreshMetadataTimer(updateInterval: session.metadataUpdateInterval)
         setTimeJumpObservation()
         beaconSender.start()
     }
@@ -86,8 +84,8 @@ public class HarmonicAdTracker {
         session.adPods.removeAll()
     }
     
-    private func setRefreshMetadataTimer() {
-        refreshMetadataTimer = Timer.publish(every: METADATA_UPDATE_INTERVAL, on: .main, in: .common)
+    private func setRefreshMetadataTimer(updateInterval: TimeInterval) {
+        refreshMetadataTimer = Timer.publish(every: updateInterval, on: .main, in: .common)
             .autoconnect()
             .sink(receiveValue: { [weak self] _ in
                 guard let self = self else { return }

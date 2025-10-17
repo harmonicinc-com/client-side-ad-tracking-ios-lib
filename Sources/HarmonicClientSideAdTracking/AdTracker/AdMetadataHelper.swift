@@ -9,8 +9,6 @@ import Foundation
 import Combine
 
 struct AdMetadataHelper {
-    private static let EARLY_FETCH_MS: Double = 5_000
-    
     private static let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .millisecondsSince1970
