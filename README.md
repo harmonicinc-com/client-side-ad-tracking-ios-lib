@@ -5,6 +5,10 @@ A library for sending ad beacons from the client-side. Works with both tradition
 - [HarmonicClientSideAdTracking](#harmonicclientsideadtracking)
   - [Installation](#installation)
   - [Usage](#usage)
+  - [Error Handling](#error-handling)
+    - [1. Observing Latest Error](#1-observing-latest-error)
+    - [2. Log Messages](#2-log-messages)
+    - [Error Types](#error-types)
   - [Minimal working examples](#minimal-working-examples)
     - [SwiftUI](#swiftui)
     - [UIKit](#uikit)
@@ -164,6 +168,35 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
         logMessages[0].timeStamp                    // Double: secondsSince1970
         logMessages[0].message                      // String
         logMessages[0].isError                      // Bool
+        logMessages[0].error                        // HarmonicAdTrackerError?: the error object if available
+        ```
+    -   To observe errors encountered by the library:
+        ```swift
+        // SwiftUI
+        .onReceive(mySession.$latestError) { error in
+            if let error = error {
+                switch error {
+                case .networkError(let message):
+                    print("Network error: \(message)")
+                case .metadataError(let message):
+                    print("Metadata error: \(message)")
+                case .beaconError(let message):
+                    print("Beacon error: \(message)")
+                }
+            }
+        }
+
+        // UIKit / Combine
+        var cancellables = Set<AnyCancellable>()
+        
+        mySession.$latestError
+            .sink { error in
+                if let error = error {
+                    // Handle error
+                    print("Ad tracking error: \(error)")
+                }
+            }
+            .store(in: &cancellables)
         ```
 
 11. Stop the ad tracker when it is not needed:
@@ -180,6 +213,121 @@ https://github.com/harmonicinc-com/client-side-ad-tracking-ios-lib
     ```
 
     -   Note: This step is optional as the session will automatically cleanup when deallocated, but calling `cleanup()` explicitly ensures immediate cleanup of player observers and prevents potential memory leaks.
+
+[Back to TOC](#harmonicclientsideadtracking)
+
+## Error Handling
+
+The library provides multiple ways to monitor and handle errors:
+
+### 1. Observing Latest Error
+
+The `latestError` property on `AdBeaconingSession` publishes the most recent error encountered:
+
+**SwiftUI Example:**
+
+```swift
+import SwiftUI
+import HarmonicClientSideAdTracking
+
+struct ContentView: View {
+    @StateObject private var mySession = AdBeaconingSession()
+    
+    var body: some View {
+        VideoPlayer(player: mySession.player)
+            .onReceive(mySession.$latestError) { error in
+                if let error = error {
+                    handleError(error)
+                }
+            }
+    }
+    
+    private func handleError(_ error: HarmonicAdTrackerError) {
+        switch error {
+        case .networkError(let message):
+            print("Network error: \(message)")
+            // Handle network-related errors (e.g., failed to load media or init session)
+        case .metadataError(let message):
+            print("Metadata error: \(message)")
+            // Handle metadata-related errors (e.g., invalid ad metadata)
+        case .beaconError(let message):
+            print("Beacon error: \(message)")
+            // Handle beacon sending errors (e.g., failed to send tracking beacon)
+        }
+    }
+}
+```
+
+**UIKit Example:**
+
+```swift
+import UIKit
+import Combine
+import HarmonicClientSideAdTracking
+
+class ViewController: UIViewController {
+    private var mySession = AdBeaconingSession()
+    private var cancellables = Set<AnyCancellable>()
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // Observe errors
+        mySession.$latestError
+            .compactMap { $0 } // Filter out nil values
+            .sink { [weak self] error in
+                self?.handleError(error)
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func handleError(_ error: HarmonicAdTrackerError) {
+        switch error {
+        case .networkError(let message):
+            // Handle network error
+            showAlert(title: "Network Error", message: message)
+        case .metadataError(let message):
+            // Handle metadata error
+            showAlert(title: "Metadata Error", message: message)
+        case .beaconError(let message):
+            // Handle beacon error
+            print("Beacon error (non-critical): \(message)")
+        }
+    }
+    
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+}
+```
+
+### 2. Log Messages
+
+For detailed logging information, you can observe the `logMessages` array which includes all errors with their associated error objects:
+
+```swift
+mySession.$logMessages
+    .sink { messages in
+        for message in messages where message.isError {
+            print("Error at \(message.timeStamp): \(message.message)")
+            if let error = message.error {
+                // Access the structured error object
+                print("Error type: \(error)")
+            }
+        }
+    }
+    .store(in: &cancellables)
+```
+
+### Error Types
+
+The library defines three types of errors:
+
+- **`networkError(String)`**: Network-related errors such as failed HTTP requests or connection issues, or when session initialization fails
+- **`metadataError(String)`**: Errors related to fetching or parsing ad metadata
+- **`beaconError(String)`**: Errors related to sending tracking beacons
 
 [Back to TOC](#harmonicclientsideadtracking)
 

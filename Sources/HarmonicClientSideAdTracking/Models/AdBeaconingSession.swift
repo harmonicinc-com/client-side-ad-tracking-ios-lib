@@ -48,12 +48,20 @@ public class AdBeaconingSession: ObservableObject {
                                                   manifestUrl: initResponse.manifestUrl,
                                                   adTrackingMetadataUrl: initResponse.trackingUrl)
                         isInitRequestSucceeded = true
+                    } catch let trackerError as HarmonicAdTrackerError {
+                        Utility
+                            .log(
+                                "Failed to make request to \(mediaUrl) to initialise the session: \(trackerError)."
+                                + "Falling back to redirect/parsing manifest.",
+                                to: self, level: .warning, with: Self.logger, error: trackerError
+                            )
                     } catch {
+                        let trackerError = HarmonicAdTrackerError.networkError("Failed to initialise session: \(error.localizedDescription)")
                         Utility
                             .log(
                                 "Failed to make request to \(mediaUrl) to initialise the session: \(error.localizedDescription)."
                                 + "Falling back to redirect/parsing manifest.",
-                                to: self, level: .warning, with: Self.logger
+                                to: self, level: .warning, with: Self.logger, error: trackerError
                             )
                     }
                 }
@@ -94,9 +102,13 @@ public class AdBeaconingSession: ObservableObject {
                                                   mediaUrl: mediaUrl,
                                                   manifestUrl: manifestUrl,
                                                   adTrackingMetadataUrl: adTrackingMetadataUrl)
+                    } catch let trackerError as HarmonicAdTrackerError {
+                        Utility.log("Failed to load media with URL: \(mediaUrl); Error: \(trackerError)",
+                                    to: self, level: .warning, with: Self.logger, error: trackerError)
                     } catch {
+                        let trackerError = HarmonicAdTrackerError.networkError("Failed to load media: \(error.localizedDescription)")
                         Utility.log("Failed to load media with URL: \(mediaUrl); Error: \(error)",
-                                    to: self, level: .warning, with: Self.logger)
+                                    to: self, level: .warning, with: Self.logger, error: trackerError)
                     }
                 }
             }
@@ -108,6 +120,7 @@ public class AdBeaconingSession: ObservableObject {
     @Published public internal(set) var latestDataRange: DataRange?
     @Published public internal(set) var playedTimeOutsideDataRange: [DataRange] = []
     @Published public internal(set) var logMessages: [LogMessage] = []
+    @Published public internal(set) var latestError: HarmonicAdTrackerError?
     
     @Published public internal(set) var isShowDebugOverlay = true
     @Published public var isInitRequest: Bool = true {

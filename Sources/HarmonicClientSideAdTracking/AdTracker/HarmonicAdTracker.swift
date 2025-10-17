@@ -92,9 +92,13 @@ public class HarmonicAdTracker {
                 Task {
                     do {
                         try await self.tryRefreshMetadata()
+                    } catch let trackerError as HarmonicAdTrackerError {
+                        Utility.log("tryRefreshMetadata failed: \(trackerError)",
+                                    to: self.session, level: .warning, with: Self.logger, error: trackerError)
                     } catch {
+                        let trackerError = HarmonicAdTrackerError.metadataError("Failed to refresh metadata: \(error.localizedDescription)")
                         Utility.log("tryRefreshMetadata failed: \(error)",
-                                    to: self.session, level: .warning, with: Self.logger)
+                                    to: self.session, level: .warning, with: Self.logger, error: trackerError)
                     }
                 }
             })

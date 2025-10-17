@@ -18,10 +18,15 @@ public struct Utility {
     }()
     
     @MainActor
-    public static func log(_ message: String, to session: AdBeaconingSession?, level: LogLevel, with logger: Logger) {
+    public static func log(_ message: String, to session: AdBeaconingSession?, level: LogLevel, with logger: Logger, error: HarmonicAdTrackerError? = nil) {
         if let session = session {
             let isError = (level == .error || level == .warning)
-            session.logMessages.append(LogMessage(timeStamp: Date().timeIntervalSince1970, message: message, isError: isError))
+            session.logMessages.append(LogMessage(timeStamp: Date().timeIntervalSince1970, message: message, isError: isError, error: error))
+            
+            // Publish error if provided
+            if let error = error, isError {
+                session.latestError = error
+            }
         }
         
         switch level {

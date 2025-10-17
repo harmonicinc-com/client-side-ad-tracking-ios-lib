@@ -12,10 +12,12 @@ public struct LogMessage: Identifiable {
     public internal(set) var timeStamp: Double
     public internal(set) var message: String
     public internal(set) var isError: Bool
+    public internal(set) var error: HarmonicAdTrackerError?
     
-    public init(timeStamp: Double, message: String, isError: Bool = false) {
+    public init(timeStamp: Double, message: String, isError: Bool = false, error: HarmonicAdTrackerError? = nil) {
         self.timeStamp = timeStamp
         self.message = message
         self.isError = isError
+        self.error = error
     }
 }

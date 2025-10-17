@@ -17,6 +17,8 @@ public struct SessionView: View {
     @State private var expandMediaUrl = true
     @State private var expandManifestUrl = true
     @State private var expandAdTrackingMetadataUrl = true
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -68,6 +70,17 @@ public struct SessionView: View {
                 }
             }
         }
+        .onReceive(session.$latestError) { error in
+            if let error = error {
+                errorMessage = getErrorMessage(from: error)
+                showErrorAlert = true
+            }
+        }
+        .alert("Error", isPresented: $showErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage)
+        }
         .font(.caption)
     }
 }
@@ -92,6 +105,17 @@ extension SessionView {
             return Date(timeIntervalSince1970: date / 1_000)
         } else {
             return nil
+        }
+    }
+    
+    private func getErrorMessage(from error: HarmonicAdTrackerError) -> String {
+        switch error {
+        case .networkError(let message):
+            return "Network Error: \(message)"
+        case .metadataError(let message):
+            return "Metadata Error: \(message)"
+        case .beaconError(let message):
+            return "Beacon Error: \(message)"
         }
     }
 }

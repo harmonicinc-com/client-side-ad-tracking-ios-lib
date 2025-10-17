@@ -235,11 +235,16 @@ class BeaconSender {
             })
             
             trackingEvent.reportingState = .done
-        } catch HarmonicAdTrackerError.beaconError(let errorMessage) {
-            Utility.log("Failed to send beacon; the error message is: \(errorMessage)", to: session, level: .error, with: Self.logger)
+        } catch let beaconError as HarmonicAdTrackerError {
+            let errorMessage = switch beaconError {
+            case .beaconError(let msg): msg
+            default: "Unexpected error type"
+            }
+            Utility.log("Failed to send beacon; the error message is: \(errorMessage)", to: session, level: .error, with: Self.logger, error: beaconError)
             trackingEvent.reportingState = .failed
         } catch {
-            Utility.log("Failed to send beacon; unexpected error: \(error)", to: session, level: .error, with: Self.logger)
+            let trackerError = HarmonicAdTrackerError.beaconError("Unexpected error: \(error)")
+            Utility.log("Failed to send beacon; unexpected error: \(error)", to: session, level: .error, with: Self.logger, error: trackerError)
             trackingEvent.reportingState = .failed
         }
     }

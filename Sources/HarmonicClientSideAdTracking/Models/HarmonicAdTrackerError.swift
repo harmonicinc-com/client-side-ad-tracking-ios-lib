@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum HarmonicAdTrackerError: Error {
+public enum HarmonicAdTrackerError: Error {
     case networkError(String)
     case metadataError(String)
     case beaconError(String)
