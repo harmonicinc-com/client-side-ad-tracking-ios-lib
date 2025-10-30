@@ -83,8 +83,8 @@ public struct Utility {
                 // Try to parse as InitResponse
                 let initResponse = try JSONDecoder().decode(InitResponse.self, from: data)
                 
-                guard let manifestUrl = URL(string: initResponse.manifestUrl, relativeTo: url)?.absoluteString,
-                      let trackingUrl = URL(string: initResponse.trackingUrl, relativeTo: url)?.absoluteString else {
+                guard let manifestUrl = URL(string: initResponse.manifestUrl, relativeTo: httpResponse.url)?.absoluteString,
+                      let trackingUrl = URL(string: initResponse.trackingUrl, relativeTo: httpResponse.url)?.absoluteString else {
                     throw HarmonicAdTrackerError.networkError("Failed to create new URLs from GET init response")
                 }
                 
@@ -110,8 +110,8 @@ public struct Utility {
         
         let initResponse = try JSONDecoder().decode(InitResponse.self, from: data)
         
-        guard let manifestUrl = URL(string: initResponse.manifestUrl, relativeTo: url)?.absoluteString,
-              let trackingUrl = URL(string: initResponse.trackingUrl, relativeTo: url)?.absoluteString else {
+        guard let manifestUrl = URL(string: initResponse.manifestUrl, relativeTo: httpResponse.url)?.absoluteString,
+              let trackingUrl = URL(string: initResponse.trackingUrl, relativeTo: httpResponse.url)?.absoluteString else {
             let errorMessage = "Failed to create new URLs from init response"
             throw HarmonicAdTrackerError.networkError(errorMessage)
         }
