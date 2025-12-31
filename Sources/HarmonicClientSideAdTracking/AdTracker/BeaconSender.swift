@@ -25,6 +25,7 @@ class BeaconSender {
     
     private let session: AdBeaconingSession
     private let playedRangeTracker: PlayedRangeTracker
+    private let httpClient: HTTPClientProtocol
 
     private var lastPlayheadChecked: Double = 0
     private var lastPlayheadCheckTime: Double = 0
@@ -32,9 +33,10 @@ class BeaconSender {
     
     private var checkNeedSendBeaconTimer: AnyCancellable?
     
-    init(session: AdBeaconingSession) {
+    init(session: AdBeaconingSession, httpClient: HTTPClientProtocol = URLSessionHTTPClient()) {
         self.session = session
         self.playedRangeTracker = PlayedRangeTracker(session: session)
+        self.httpClient = httpClient
     }
     
     func start() {
@@ -59,6 +61,11 @@ class BeaconSender {
                     for trackingEvent in ad.trackingEvents {
                         guard let reportingState = trackingEvent.reportingState else {
                             return
+                        }
+
+                        // Skip player-initiated events - these should only be sent manually
+                        if trackingEvent.event?.isPlayerInitiated == true {
+                            continue
                         }
                         
                         if reportingState == .idle {
@@ -185,6 +192,11 @@ class BeaconSender {
                                       let reportingState = trackingEvent.reportingState else {
                                     return
                                 }
+
+                                // Skip player-initiated events - these should only be sent manually
+                                if trackingEvent.event?.isPlayerInitiated == true {
+                                    continue
+                                }
                                 
                                 // if time1 is within event start plus 1s (or duration for impression event)
                                 let endTime = startTime + max(duration, MAX_TOLERANCE_EVENT_END_TIME)
@@ -217,7 +229,7 @@ class BeaconSender {
                         guard let url = URL(string: urlString) else {
                             throw HarmonicAdTrackerError.beaconError("Invalid signaling url: \(urlString)")
                         }
-                        let (_, response) = try await URLSession.shared.data(from: url)
+                        let (_, response) = try await self.httpClient.data(from: url)
                         guard let httpResponse = response as? HTTPURLResponse else {
                             throw HarmonicAdTrackerError.beaconError("Invalid URLResponse for url: \(urlString)")
                         }
@@ -247,6 +259,55 @@ class BeaconSender {
             Utility.log("Failed to send beacon; unexpected error: \(error)", to: session, level: .error, with: Self.logger, error: trackerError)
             trackingEvent.reportingState = .failed
         }
+    }
+    
+    /// Sends a user-triggered beacon for the currently playing ad.
+    /// - Parameter eventType: The type of user-triggered event to send
+    /// - Returns: True if the beacon was sent or queued, false if no ad is currently playing or no matching tracking event exists
+    func sendUserTriggeredBeacon(eventType: EventType) async -> Bool {
+        guard let playhead = session.playerObserver.playhead else {
+            Utility.log("Cannot send \(eventType) beacon: playhead is nil",
+                        to: session, level: .warning, with: Self.logger)
+            return false
+        }
+        
+        // Find the currently playing ad
+        for pod in session.adPods {
+            guard let podStartTime = pod.startTime, let podDuration = pod.duration else { continue }
+            
+            // Check if playhead is within this pod
+            if playhead >= podStartTime && playhead <= podStartTime + podDuration {
+                for ad in pod.ads {
+                    guard let adStartTime = ad.startTime, let adDuration = ad.duration else { continue }
+                    
+                    // Check if playhead is within this ad
+                    if playhead >= adStartTime && playhead <= adStartTime + adDuration {
+                        // Find tracking event matching the event type
+                        for trackingEvent in ad.trackingEvents {
+                            if trackingEvent.event == eventType {
+                                let adId = ad.id ?? UUID().uuidString
+                                
+                                // Always send if the player operation is triggered
+                                await sendBeacon(trackingEvent)
+                                
+                                Utility.log("Sent \(eventType) beacon for ad \(adId)",
+                                            to: session, level: .info, with: Self.logger)
+                                return true
+                            }
+                        }
+                        
+                        // No matching tracking event found for this ad
+                        Utility.log("No \(eventType) tracking event found for current ad",
+                                    to: session, level: .debug, with: Self.logger)
+                        return false
+                    }
+                }
+            }
+        }
+        
+        Utility.log("Cannot send \(eventType) beacon: no ad is currently playing",
+                    to: session, level: .debug, with: Self.logger)
+        return false
     }
     
 }

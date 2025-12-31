@@ -46,6 +46,12 @@ public class PlayerObserver: ObservableObject {
     
     init() {}
     
+    /// Sets the playhead value. Intended for testing purposes only.
+    /// - Parameter value: The playhead value in milliseconds
+    internal func setPlayhead(_ value: Double?) {
+        self.playhead = value
+    }
+    
     func setSession(_ session: AdBeaconingSession) {
         let player = session.player
         

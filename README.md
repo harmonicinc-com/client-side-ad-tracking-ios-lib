@@ -9,6 +9,7 @@ A library for sending ad beacons from the client-side. Works with both tradition
     - [1. Observing Latest Error](#1-observing-latest-error)
     - [2. Log Messages](#2-log-messages)
     - [Error Types](#error-types)
+  - [User-Triggered Beacons](#user-triggered-beacons)
   - [Minimal working examples](#minimal-working-examples)
     - [SwiftUI](#swiftui)
     - [UIKit](#uikit)
@@ -330,6 +331,29 @@ The library defines three types of errors:
 - **`networkError(String)`**: Network-related errors such as failed HTTP requests or connection issues, or when session initialization fails
 - **`metadataError(String)`**: Errors related to fetching or parsing ad metadata
 - **`beaconError(String)`**: Errors related to sending tracking beacons
+
+[Back to TOC](#harmonicclientsideadtracking)
+
+## User-Triggered Beacons
+
+In addition to automatic beacon firing for progress events (start, firstQuartile, midpoint, thirdQuartile, complete), the library supports user-triggered beacon events. These events should be reported by your application when the user interacts with the player during ad playback.
+
+The following user-triggered beacon methods are available on `HarmonicAdTracker`:
+
+| Method | Description |
+|--------|-------------|
+| `reportMute()` | Call when the user mutes the player |
+| `reportUnmute()` | Call when the user unmutes the player |
+| `reportPause()` | Call when the user pauses the player |
+| `reportResume()` | Call when the user resumes the player |
+
+These methods are async and return a `Bool` indicating whether the beacon was sent:
+- Returns `true` if the beacon was successfully sent
+- Returns `false` if no ad is currently playing or no matching tracking event exists in the ad metadata
+
+> **Note:** These beacon methods will only send beacons if:
+> 1. An ad is currently playing (the playhead is within an ad's time range)
+> 2. The ad metadata includes tracking events for the respective event type (mute, unmute, pause, resume)
 
 [Back to TOC](#harmonicclientsideadtracking)
 

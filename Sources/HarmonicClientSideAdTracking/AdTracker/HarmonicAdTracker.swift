@@ -43,6 +43,44 @@ public class HarmonicAdTracker {
         timeJumpObservation?.cancel()
         beaconSender.stop()
     }
+    
+    // MARK: - User-Triggered Beacon Methods
+    
+    /// Reports that the player was muted. Call this method when the user mutes the player.
+    /// The SDK will send mute beacons if an ad is currently playing and has mute tracking events.
+    /// - Returns: True if the beacon was sent, false if no ad is currently playing or no mute tracking event exists
+    @discardableResult
+    public func reportMute() async -> Bool {
+        Utility.log("User reported mute event", to: session, level: .debug, with: Self.logger)
+        return await beaconSender.sendUserTriggeredBeacon(eventType: .mute)
+    }
+    
+    /// Reports that the player was unmuted. Call this method when the user unmutes the player.
+    /// The SDK will send unmute beacons if an ad is currently playing and has unmute tracking events.
+    /// - Returns: True if the beacon was sent, false if no ad is currently playing or no unmute tracking event exists
+    @discardableResult
+    public func reportUnmute() async -> Bool {
+        Utility.log("User reported unmute event", to: session, level: .debug, with: Self.logger)
+        return await beaconSender.sendUserTriggeredBeacon(eventType: .unmute)
+    }
+    
+    /// Reports that the player was paused. Call this method when the user pauses the player.
+    /// The SDK will send pause beacons if an ad is currently playing and has pause tracking events.
+    /// - Returns: True if the beacon was sent, false if no ad is currently playing or no pause tracking event exists
+    @discardableResult
+    public func reportPause() async -> Bool {
+        Utility.log("User reported pause event", to: session, level: .debug, with: Self.logger)
+        return await beaconSender.sendUserTriggeredBeacon(eventType: .pause)
+    }
+    
+    /// Reports that the player was resumed. Call this method when the user resumes the player.
+    /// The SDK will send resume beacons if an ad is currently playing and has resume tracking events.
+    /// - Returns: True if the beacon was sent, false if no ad is currently playing or no resume tracking event exists
+    @discardableResult
+    public func reportResume() async -> Bool {
+        Utility.log("User reported resume event", to: session, level: .debug, with: Self.logger)
+        return await beaconSender.sendUserTriggeredBeacon(eventType: .resume)
+    }
 
     private func tryRefreshMetadata() async throws {
         guard let playhead = session.playerObserver.playhead else {
