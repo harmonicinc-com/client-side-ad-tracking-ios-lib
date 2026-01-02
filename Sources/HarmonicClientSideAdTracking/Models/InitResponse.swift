@@ -7,7 +7,12 @@
 
 import Foundation
 
-struct InitResponse: Decodable {
-    let manifestUrl: String
-    let trackingUrl: String
+public struct InitResponse: Decodable {
+    public let manifestUrl: String
+    public let trackingUrl: String
+    
+    public init(manifestUrl: String, trackingUrl: String) {
+        self.manifestUrl = manifestUrl
+        self.trackingUrl = trackingUrl
+    }
 }

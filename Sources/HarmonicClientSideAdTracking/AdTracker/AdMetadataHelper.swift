@@ -15,12 +15,16 @@ struct AdMetadataHelper {
         return decoder
     }()
     
-    static func requestAdMetadata(with metadataUrl: String) async throws -> AdBeacon {
+    static func requestAdMetadata(with metadataUrl: String, using httpClient: HTTPClientProtocol = URLSessionHTTPClient()) async throws -> AdBeacon {
         guard !metadataUrl.isEmpty else {
             throw HarmonicAdTrackerError.metadataError("The metadata URL is empty.")
         }
         
-        let (data, _) = try await Utility.makeRequest(to: metadataUrl)        
+        guard let url = URL(string: metadataUrl) else {
+            throw HarmonicAdTrackerError.metadataError("Invalid metadata URL: \(metadataUrl)")
+        }
+        
+        let (data, _) = try await httpClient.data(from: url)
         let adBeacon = try Self.decoder.decode(AdBeacon.self, from: data)
         
         guard let latestDataRange = adBeacon.dataRange,

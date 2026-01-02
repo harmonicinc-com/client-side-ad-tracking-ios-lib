@@ -18,6 +18,9 @@ public class AdBeaconingSession: ObservableObject {
         category: String(describing: AdBeaconingSession.self)
     )
     
+    /// The network client used for making HTTP requests. Can be injected for testing.
+    let networkClient: NetworkClientProtocol
+    
     public var player = AVPlayer() {
         willSet {
             // Clean up observations on the old player before setting new one
@@ -35,82 +38,88 @@ public class AdBeaconingSession: ObservableObject {
         didSet {
             guard !mediaUrl.isEmpty else { return }
             Task {
-                var manifestUrl, adTrackingMetadataUrl: String
+                await loadSession(for: mediaUrl)
+            }
+        }
+    }
+    
+    /// Loads session information for the given media URL.
+    /// This method is internal to allow testing.
+    func loadSession(for urlString: String) async {
+        var manifestUrl, adTrackingMetadataUrl: String
 
-                var isInitRequestSucceeded = false
-                if isInitRequest {
-                    do {
-                        let initResponse = try await Utility.makeInitRequest(to: mediaUrl)
-                        Utility.log("Parsed URLs from session init request: \(initResponse.manifestUrl), \(initResponse.trackingUrl)",
-                                    to: self, level: .info, with: Self.logger)
-                        sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
-                                                  mediaUrl: mediaUrl,
-                                                  manifestUrl: initResponse.manifestUrl,
-                                                  adTrackingMetadataUrl: initResponse.trackingUrl)
-                        isInitRequestSucceeded = true
-                    } catch let trackerError as HarmonicAdTrackerError {
-                        Utility
-                            .log(
-                                "Failed to make request to \(mediaUrl) to initialise the session: \(trackerError)."
-                                + "Falling back to redirect/parsing manifest.",
-                                to: self, level: .warning, with: Self.logger, error: trackerError
-                            )
-                    } catch {
-                        let trackerError = HarmonicAdTrackerError.networkError("Failed to initialise session: \(error.localizedDescription)")
-                        Utility
-                            .log(
-                                "Failed to make request to \(mediaUrl) to initialise the session: \(error.localizedDescription)."
-                                + "Falling back to redirect/parsing manifest.",
-                                to: self, level: .warning, with: Self.logger, error: trackerError
-                            )
+        var isInitRequestSucceeded = false
+        if isInitRequest {
+            do {
+                let initResponse = try await networkClient.makeInitRequest(to: urlString)
+                Utility.log("Parsed URLs from session init request: \(initResponse.manifestUrl), \(initResponse.trackingUrl)",
+                            to: self, level: .info, with: Self.logger)
+                sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
+                                          mediaUrl: urlString,
+                                          manifestUrl: initResponse.manifestUrl,
+                                          adTrackingMetadataUrl: initResponse.trackingUrl)
+                isInitRequestSucceeded = true
+            } catch let trackerError as HarmonicAdTrackerError {
+                Utility
+                    .log(
+                        "Failed to make request to \(urlString) to initialise the session: \(trackerError)."
+                        + "Falling back to redirect/parsing manifest.",
+                        to: self, level: .warning, with: Self.logger, error: trackerError
+                    )
+            } catch {
+                let trackerError = HarmonicAdTrackerError.networkError("Failed to initialise session: \(error.localizedDescription)")
+                Utility
+                    .log(
+                        "Failed to make request to \(urlString) to initialise the session: \(error.localizedDescription)."
+                        + "Falling back to redirect/parsing manifest.",
+                        to: self, level: .warning, with: Self.logger, error: trackerError
+                    )
+            }
+        }
+        
+        if !isInitRequest || (isInitRequest && !isInitRequestSucceeded) {
+            do {
+                let (data, httpResponse) = try await networkClient.makeRequest(to: urlString)
+                
+                let redirectStatusCodes = [301, 302]
+                if let redirectedUrl = httpResponse.url, redirectStatusCodes.contains(httpResponse.statusCode) {
+                    manifestUrl = redirectedUrl.absoluteString
+                    adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: redirectedUrl.absoluteString)
+                } else {
+                    // No redirect occurred, parse the HLS master playlist
+                    guard let originalUrl = URL(string: urlString) else {
+                        manifestUrl = urlString
+                        adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: urlString)
+                        Utility.log("Failed to create URL from mediaUrl: \(urlString)", 
+                                   to: self, level: .warning, with: Self.logger)
+                        return
+                    }
+                    
+                    if let firstMediaPlaylistUrl = Utility.parseHLSMasterPlaylist(data, baseURL: originalUrl) {
+                        manifestUrl = firstMediaPlaylistUrl
+                        adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: firstMediaPlaylistUrl)
+                        Utility.log("Parsed first media playlist URL from HLS master: \(firstMediaPlaylistUrl)", 
+                                   to: self, level: .info, with: Self.logger)
+                    } else {
+                        // Fallback to original URL if parsing fails
+                        manifestUrl = urlString
+                        adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: urlString)
+                        Utility.log("Failed to parse HLS master playlist, using original URL: \(urlString)", 
+                                   to: self, level: .warning, with: Self.logger)
                     }
                 }
                 
-                if !isInitRequest || (isInitRequest && !isInitRequestSucceeded) {
-                    do {
-                        let (data, httpResponse) = try await Utility.makeRequest(to: mediaUrl)
-                        
-                        let redirectStatusCodes = [301, 302]
-                        if let redirectedUrl = httpResponse.url, redirectStatusCodes.contains(httpResponse.statusCode) {
-                            manifestUrl = redirectedUrl.absoluteString
-                            adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: redirectedUrl.absoluteString)
-                        } else {
-                            // No redirect occurred, parse the HLS master playlist
-                            guard let originalUrl = URL(string: mediaUrl) else {
-                                manifestUrl = mediaUrl
-                                adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: mediaUrl)
-                                Utility.log("Failed to create URL from mediaUrl: \(mediaUrl)", 
-                                           to: self, level: .warning, with: Self.logger)
-                                return
-                            }
-                            
-                            if let firstMediaPlaylistUrl = Utility.parseHLSMasterPlaylist(data, baseURL: originalUrl) {
-                                manifestUrl = firstMediaPlaylistUrl
-                                adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: firstMediaPlaylistUrl)
-                                Utility.log("Parsed first media playlist URL from HLS master: \(firstMediaPlaylistUrl)", 
-                                           to: self, level: .info, with: Self.logger)
-                            } else {
-                                // Fallback to original URL if parsing fails
-                                manifestUrl = mediaUrl
-                                adTrackingMetadataUrl = Utility.rewriteToMetadataUrl(from: mediaUrl)
-                                Utility.log("Failed to parse HLS master playlist, using original URL: \(mediaUrl)", 
-                                           to: self, level: .warning, with: Self.logger)
-                            }
-                        }
-                        
-                        sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
-                                                  mediaUrl: mediaUrl,
-                                                  manifestUrl: manifestUrl,
-                                                  adTrackingMetadataUrl: adTrackingMetadataUrl)
-                    } catch let trackerError as HarmonicAdTrackerError {
-                        Utility.log("Failed to load media with URL: \(mediaUrl); Error: \(trackerError)",
-                                    to: self, level: .warning, with: Self.logger, error: trackerError)
-                    } catch {
-                        let trackerError = HarmonicAdTrackerError.networkError("Failed to load media: \(error.localizedDescription)")
-                        Utility.log("Failed to load media with URL: \(mediaUrl); Error: \(error)",
-                                    to: self, level: .warning, with: Self.logger, error: trackerError)
-                    }
-                }
+                sessionInfo = SessionInfo(localSessionId: Date().ISO8601Format(),
+                                          mediaUrl: urlString,
+                                          manifestUrl: manifestUrl,
+                                          adTrackingMetadataUrl: adTrackingMetadataUrl)
+            } catch let trackerError as HarmonicAdTrackerError {
+                Utility.log("Failed to load media with URL: \(urlString); Error: \(trackerError)",
+                            to: self, level: .warning, with: Self.logger, error: trackerError)
+            } catch {
+                let trackerError = HarmonicAdTrackerError.networkError("Failed to load media: \(error.localizedDescription)")
+                Utility.log("Failed to load media with URL: \(urlString); Error: \(error)",
+                            to: self, level: .warning, with: Self.logger, error: trackerError)
             }
         }
     }
@@ -138,7 +147,8 @@ public class AdBeaconingSession: ObservableObject {
     
     var latestPlayhead: Double = 0
     
-    public init() {
+    public init(networkClient: NetworkClientProtocol = URLSessionNetworkClient()) {
+        self.networkClient = networkClient
         self.playerObserver.setSession(self)
     }
     
