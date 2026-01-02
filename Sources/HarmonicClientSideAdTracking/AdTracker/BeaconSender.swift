@@ -170,7 +170,7 @@ class BeaconSender {
         lastPlayheadCheckTime = now
     }
     
-    private func iterateTrackingEvents(time0: Double, time1: Double) async {
+    func iterateTrackingEvents(time0: Double, time1: Double) async {
         for pod in session.adPods {
             guard let podStartTime = pod.startTime, let duration = pod.duration else {
                 return
