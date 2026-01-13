@@ -18,6 +18,10 @@ public enum EventType: String, Decodable {
     case unmute
     case pause
     case resume
+    case rewind
+    case skip
+    case playerExpand
+    case playerCollapse
     case unknown
     
     public init(from decoder: Decoder) throws {
@@ -28,7 +32,7 @@ public enum EventType: String, Decodable {
     /// rather than automatically by playhead position.
     public var isPlayerInitiated: Bool {
         switch self {
-        case .mute, .unmute, .pause, .resume:
+        case .mute, .unmute, .pause, .resume, .rewind, .skip, .playerExpand, .playerCollapse:
             return true
         default:
             return false

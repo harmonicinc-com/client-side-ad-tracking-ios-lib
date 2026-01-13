@@ -346,6 +346,10 @@ The following user-triggered beacon methods are available on `HarmonicAdTracker`
 | `reportUnmute()` | Call when the user unmutes the player |
 | `reportPause()` | Call when the user pauses the player |
 | `reportResume()` | Call when the user resumes the player |
+| `reportRewind()` | Call when the user rewinds the player during ad playback |
+| `reportSkip()` | Call when the user skips the ad |
+| `reportPlayerExpand()` | Call when the user expands the player to a larger size |
+| `reportPlayerCollapse()` | Call when the user collapses the player to a smaller size |
 
 These methods are async and return a `Bool` indicating whether the beacon was sent:
 - Returns `true` if the beacon was successfully sent
@@ -353,7 +357,7 @@ These methods are async and return a `Bool` indicating whether the beacon was se
 
 > **Note:** These beacon methods will only send beacons if:
 > 1. An ad is currently playing (the playhead is within an ad's time range)
-> 2. The ad metadata includes tracking events for the respective event type (mute, unmute, pause, resume)
+> 2. The ad metadata includes tracking events for the respective event type (mute, unmute, pause, resume, rewind, skip, playerExpand, playerCollapse)
 
 [Back to TOC](#harmonicclientsideadtracking)
 

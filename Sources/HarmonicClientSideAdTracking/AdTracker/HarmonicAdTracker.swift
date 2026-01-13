@@ -81,6 +81,42 @@ public class HarmonicAdTracker {
         Utility.log("User reported resume event", to: session, level: .debug, with: Self.logger)
         return await beaconSender.sendUserTriggeredBeacon(eventType: .resume)
     }
+    
+    /// Reports that the user rewound the player. Call this method when the user rewinds during ad playback.
+    /// The SDK will send rewind beacons if an ad is currently playing and has rewind tracking events.
+    /// - Returns: True if the beacon was sent, false if no ad is currently playing or no rewind tracking event exists
+    @discardableResult
+    public func reportRewind() async -> Bool {
+        Utility.log("User reported rewind event", to: session, level: .debug, with: Self.logger)
+        return await beaconSender.sendUserTriggeredBeacon(eventType: .rewind)
+    }
+    
+    /// Reports that the user skipped the ad. Call this method when the user skips during ad playback.
+    /// The SDK will send skip beacons if an ad is currently playing and has skip tracking events.
+    /// - Returns: True if the beacon was sent, false if no ad is currently playing or no skip tracking event exists
+    @discardableResult
+    public func reportSkip() async -> Bool {
+        Utility.log("User reported skip event", to: session, level: .debug, with: Self.logger)
+        return await beaconSender.sendUserTriggeredBeacon(eventType: .skip)
+    }
+    
+    /// Reports that the player was expanded to a larger size. Call this method when the user expands the player.
+    /// The SDK will send playerExpand beacons if an ad is currently playing and has playerExpand tracking events.
+    /// - Returns: True if the beacon was sent, false if no ad is currently playing or no playerExpand tracking event exists
+    @discardableResult
+    public func reportPlayerExpand() async -> Bool {
+        Utility.log("User reported playerExpand event", to: session, level: .debug, with: Self.logger)
+        return await beaconSender.sendUserTriggeredBeacon(eventType: .playerExpand)
+    }
+    
+    /// Reports that the player was collapsed to a smaller size. Call this method when the user collapses the player.
+    /// The SDK will send playerCollapse beacons if an ad is currently playing and has playerCollapse tracking events.
+    /// - Returns: True if the beacon was sent, false if no ad is currently playing or no playerCollapse tracking event exists
+    @discardableResult
+    public func reportPlayerCollapse() async -> Bool {
+        Utility.log("User reported playerCollapse event", to: session, level: .debug, with: Self.logger)
+        return await beaconSender.sendUserTriggeredBeacon(eventType: .playerCollapse)
+    }
 
     private func tryRefreshMetadata() async throws {
         guard let playhead = session.playerObserver.playhead else {
