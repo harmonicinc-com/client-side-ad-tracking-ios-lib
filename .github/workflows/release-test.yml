@@ -17,10 +17,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: List available iOS simulators
+        id: find-simulator
+        run: |
+          echo "Available iOS Simulators:"
+          xcrun simctl list devices available --json | jq -r '.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | "\(.name) (\(.udid))"'
+          
+          # Get the first available iPhone simulator
+          SIMULATOR_NAME=$(xcrun simctl list devices available --json | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.name | startswith("iPhone"))] | first | .name')
+          
+          echo "Selected simulator: $SIMULATOR_NAME"
+          echo "simulator_name=$SIMULATOR_NAME" >> $GITHUB_OUTPUT
+
       - name: Run unit tests on iOS Simulator
         run: |
-          # Define the destination for the iOS Simulator
-          IOS_DESTINATION="platform=iOS Simulator,name=iPhone 17,OS=latest"
+          # Use the dynamically discovered iOS Simulator
+          IOS_DESTINATION="platform=iOS Simulator,name=${{ steps.find-simulator.outputs.simulator_name }},OS=latest"
+          
+          echo "Using destination: $IOS_DESTINATION"
           
           PACKAGE_SCHEME="HarmonicClientSideAdTracking"
 
